@@ -89,9 +89,9 @@ def download_grafana_metrics(report_dir=None):
     """Скачивает метрики из Grafana."""
     config_manager = ConfigManager()
     
-    # Если директория отчета не указана, используем текущую
+    # Если директория отчета не указана, используем путь из config.ini
     if report_dir is None:
-        report_dir = os.getcwd()
+        report_dir = config_manager.report_dir
     
     # Скачиваем метрики
     grafana = GrafanaMetricsManager(config_manager)
