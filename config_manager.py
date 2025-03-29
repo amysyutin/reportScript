@@ -1,6 +1,6 @@
 from configparser import ConfigParser
 import os
-from datetime import datetime
+from datetime import datetime, timedelta
 
 class ConfigManager:
     def __init__(self, config_file='config.ini', test_config_file='test_config.ini'):
@@ -20,10 +20,11 @@ class ConfigManager:
             start_time = self.test_config['Test']['start_time']
             end_time = self.test_config['Test']['end_time']
             
-            # Преобразуем время в формат ISO 8601
-            start_dt = datetime.strptime(start_time, "%Y-%m-%d %H:%M:%S")
-            end_dt = datetime.strptime(end_time, "%Y-%m-%d %H:%M:%S")
+            # Преобразуем время из московского в UTC (разница 3 часа)
+            start_dt = datetime.strptime(start_time, "%Y-%m-%d %H:%M:%S") - timedelta(hours=3)
+            end_dt = datetime.strptime(end_time, "%Y-%m-%d %H:%M:%S") - timedelta(hours=3)
             
+            # Форматируем время в UTC с Z на конце
             self.config['Grafana']['time_from'] = start_dt.strftime("%Y-%m-%dT%H:%M:%S.000Z")
             self.config['Grafana']['time_to'] = end_dt.strftime("%Y-%m-%dT%H:%M:%S.000Z")
             

@@ -33,13 +33,11 @@ class GrafanaMetricsManager:
                     if line and not line.startswith('#'):
                         name, url = line.split('=', 1)
                         url = url.strip()
-                        # Добавляем параметры для рендеринга
-                        if '?' in url:
-                            url += f"&width=1000&height=500&timeout=60&tz=Europe/Moscow&render=1"
-                        else:
-                            url += f"?width=1000&height=500&timeout=60&tz=Europe/Moscow&render=1"
                         # Добавляем временной диапазон
-                        url += f"&from={self.config.time_range['from']}&to={self.config.time_range['to']}"
+                        if '?' in url:
+                            url += f"&from={self.config.time_range['from']}&to={self.config.time_range['to']}"
+                        else:
+                            url += f"?from={self.config.time_range['from']}&to={self.config.time_range['to']}"
                         urls[name.strip()] = url
         except Exception as e:
             print(f"Ошибка при загрузке URL метрик: {str(e)}")
@@ -89,7 +87,7 @@ def download_grafana_metrics(report_dir=None):
     """Скачивает метрики из Grafana."""
     config_manager = ConfigManager()
     
-    # Если директория отчета не указана, используем путь из config.ini
+    # Если директория отчета не указана, берем из конфига
     if report_dir is None:
         report_dir = config_manager.report_dir
     
