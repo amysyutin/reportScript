@@ -1,59 +1,68 @@
-import requests
 import os
-from datetime import datetime, timedelta
-from utils import logger, create_folder_if_not_exists, format_datetime
+import logging
+import requests
+from datetime import datetime
+import pytz
+from utils import create_folder_if_not_exists
 
-class GrafanaService:
-    def __init__(self, config):
-        self.config = config
-        self.headers = {
-            'Authorization': f"Bearer {self.config.grafana_config['api_key']}"
+def download_grafana_metrics(cfg, metrics, main_folder_path):
+    """
+    Скачивает метрики из Grafana.
+    
+    Функция выполняет следующие действия:
+    1. Создает папку для метрик
+    2. Настраивает заголовки для запросов к Grafana
+    3. Получает временной диапазон из конфигурации
+    4. Скачивает каждую метрику в указанном временном диапазоне
+    
+    Args:
+        cfg (dict): Конфигурационный словарь с параметрами:
+            - grafana.api_key: API ключ для доступа к Grafana
+            - mainConfig.timezone: часовой пояс
+            - mainConfig.from: начальное время
+            - mainConfig.to: конечное время
+        metrics (dict): Словарь с метриками и их URL
+        main_folder_path (str): Путь к основной папке для сохранения метрик
+        
+    Raises:
+        Exception: Если возникла ошибка при скачивании метрик
+    """
+    try:
+        # Создаем папку для метрик внутри основной папки
+        metrics_folder = os.path.join(main_folder_path, "metrics")
+        create_folder_if_not_exists(metrics_folder)
+        
+        # Настраиваем заголовки для запросов к Grafana
+        headers = {
+            'Authorization': f"Bearer {cfg['grafana']['api_key']}"
         }
-
-    def _format_time_for_grafana(self, time_str):
-        """Конвертирует время из московского в UTC."""
-        try:
-            dt = datetime.strptime(time_str, "%Y-%m-%d %H:%M:%S")
-            # Конвертируем из московского времени (UTC+3) в UTC
-            dt = dt - timedelta(hours=3)
-            return dt.strftime("%Y-%m-%dT%H:%M:%S.000Z")
-        except Exception as e:
-            logger.error(f"Ошибка при форматировании времени: {str(e)}")
-            raise
-
-    def download_metric(self, metric):
-        """Скачивает одну метрику."""
-        try:
-            response = requests.get(
-                metric['url'],
-                headers=self.headers,
-                verify=False  # Для самоподписанных сертификатов
-            )
-            response.raise_for_status()
-            
-            filename = os.path.join(
-                self.config.grafana_config['local_path'],
-                f"{metric['name']}.png"
-            )
-            
-            with open(filename, 'wb') as f:
-                f.write(response.content)
-            
-            logger.info(f"Метрика {metric['name']} скачана в {filename}")
-            return filename
-        except Exception as e:
-            logger.error(f"Ошибка при скачивании метрики {metric['name']}: {str(e)}")
-            raise
-
-    def download_metrics(self):
-        """Скачивает все метрики."""
-        try:
-            create_folder_if_not_exists(self.config.grafana_config['local_path'])
-            
-            for metric in self.config.metrics_config:
-                self.download_metric(metric)
+        
+        # Получаем временной диапазон из конфигурации
+        tz = pytz.timezone(cfg['mainConfig']['timezone'])
+        from_time = datetime.strptime(cfg['mainConfig']['from'], "%Y-%m-%d %H:%M:%S").astimezone(tz)
+        to_time = datetime.strptime(cfg['mainConfig']['to'], "%Y-%m-%d %H:%M:%S").astimezone(tz)
+        
+        # Скачиваем каждую метрику
+        for metric_name, metric_url in metrics.items():
+            try:
+                # Формируем URL с временным диапазоном
+                # Конвертируем время в миллисекунды (формат, требуемый Grafana)
+                url = f"{metric_url}&from={int(from_time.timestamp()*1000)}&to={int(to_time.timestamp()*1000)}"
                 
-            logger.info("Все метрики успешно скачаны")
-        except Exception as e:
-            logger.error(f"Ошибка при скачивании метрик: {str(e)}")
-            raise 
+                # Выполняем запрос к Grafana
+                response = requests.get(url, headers=headers)
+                response.raise_for_status()  # Проверяем успешность запроса
+                
+                # Сохраняем метрику в JSON-файл
+                metric_file = os.path.join(metrics_folder, f"{metric_name}.json")
+                with open(metric_file, 'w') as f:
+                    f.write(response.text)
+                    
+                logging.info(f"Метрика {metric_name} успешно скачана")
+                
+            except Exception as e:
+                logging.error(f"Ошибка при скачивании метрики {metric_name}: {str(e)}")
+                
+    except Exception as e:
+        logging.error(f"Ошибка при скачивании метрик Grafana: {str(e)}")
+        raise 

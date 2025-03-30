@@ -1,0 +1,92 @@
+1. Измени свой основной конфиг (config.yml), добавив раздел mainConfig:
+yaml
+Копировать
+Редактировать
+mainConfig:
+  scenario: "upload"
+  type_of_script: "max"
+  from: "2025-03-28 18:48:18"
+  to: "2025-03-28 20:27:29"
+  timezone: "Europe/Moscow"
+2. В файле utils.py создай функцию генерации имени главной папки из конфигурации:
+python
+Копировать
+Редактировать
+from datetime import datetime
+import pytz
+import os
+
+def create_main_folder_name(cfg):
+    tz = pytz.timezone(cfg['mainConfig']['timezone'])
+    from_time = datetime.strptime(cfg['mainConfig']['from'], "%Y-%m-%d %H:%M:%S").astimezone(tz)
+    to_time = datetime.strptime(cfg['mainConfig']['to'], "%Y-%m-%d %H:%M:%S").astimezone(tz)
+
+    date_str = to_time.strftime("%d.%m.%y")
+    time_str = to_time.strftime("%H.%M")
+
+    folder_name = f"{date_str} {cfg['mainConfig']['type_of_script']} {cfg['mainConfig']['scenario']} {time_str}"
+    return folder_name
+
+def create_main_folder(cfg):
+    folder_name = create_main_folder_name(cfg)
+    full_path = os.path.join(cfg['local']['base_dir'], folder_name)
+    if not os.path.exists(full_path):
+        os.makedirs(full_path)
+    return full_path
+Функция делает следующее:
+
+Берёт данные из конфига.
+
+Формирует строку в нужном формате.
+
+Создаёт папку и возвращает путь.
+
+3. Используй эту функцию в main.py перед запуском сервисов:
+python
+Копировать
+Редактировать
+from config import load_config, load_metrics_config
+from ssh_service import ssh_download_last_report
+from grafana_service import download_grafana_metrics
+from utils import create_main_folder
+
+cfg = load_config()
+
+# Создание общей папки
+main_folder_path = create_main_folder(cfg)
+
+# Передача пути основной папки сервисам
+if cfg['services'].get('ssh_service', True):
+    ssh_download_last_report(cfg, main_folder_path)
+
+if cfg['services'].get('grafana_service', True):
+    metrics = load_metrics_config()
+    download_grafana_metrics(cfg, metrics, main_folder_path)
+4. Измени функции сервисов (ssh_service.py и grafana_service.py):
+ssh_service.py:
+
+python
+Копировать
+Редактировать
+def ssh_download_last_report(cfg, main_folder_path):
+    local_path = os.path.join(main_folder_path, "gatling")
+    create_folder_if_not_exists(local_path)
+    # дальше логика твоего скачивания отчёта
+grafana_service.py:
+
+python
+Копировать
+Редактировать
+def download_grafana_metrics(cfg, metrics, main_folder_path):
+    metrics_folder = os.path.join(main_folder_path, "metrics")
+    create_folder_if_not_exists(metrics_folder)
+    # дальше логика скачивания метрик
+Теперь при каждом запуске скрипта, независимо от сервиса, у тебя всегда будет создаваться общая папка с понятным и красивым названием:
+
+arduino
+Копировать
+Редактировать
+reports/
+└── 28.03.25 max upload 20.27
+    ├── gatling/
+    └── metrics/

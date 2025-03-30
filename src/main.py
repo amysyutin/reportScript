@@ -1,47 +1,50 @@
-from config import Config
-from ssh_service import SSHService
-from grafana_service import GrafanaService
-from utils import logger
 import argparse
+import logging
+from config import load_config, load_metrics_config
+from ssh_service import ssh_download_last_report
+from grafana_service import download_grafana_metrics
+from utils import create_main_folder
+
+# Настройка логирования с выводом в консоль
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s'
+)
 
 def main():
-    try:
-        # Парсинг аргументов командной строки
-        parser = argparse.ArgumentParser(description='Скрипт для скачивания отчетов Gatling и метрик Grafana')
-        parser.add_argument('-gatling', action='store_true', help='Скачать только отчет Gatling')
-        parser.add_argument('-grafana', action='store_true', help='Скачать только метрики Grafana')
-        parser.add_argument('-all', action='store_true', help='Скачать и отчет, и метрики (по умолчанию)')
-        args = parser.parse_args()
+    """
+    Основная функция скрипта.
+    
+    Скрипт выполняет следующие действия:
+    1. Парсит аргументы командной строки
+    2. Загружает конфигурацию
+    3. Создает основную папку для отчетов
+    4. Скачивает отчет Gatling (если указан флаг -gatling)
+    5. Скачивает метрики Grafana (если указан флаг -grafana)
+    """
+    # Настройка парсера аргументов командной строки
+    parser = argparse.ArgumentParser(description='Скачивание отчетов и метрик')
+    parser.add_argument('-gatling', action='store_true', help='Скачать отчет Gatling')
+    parser.add_argument('-grafana', action='store_true', help='Скачать метрики Grafana')
+    args = parser.parse_args()
 
-        # Определение сервисов для запуска
-        services = {
-            'ssh_service': args.gatling or args.all or (not args.gatling and not args.grafana),
-            'grafana_service': args.grafana or args.all or (not args.gatling and not args.grafana)
-        }
+    # Загрузка конфигурации из файла config.yml
+    cfg = load_config()
+    
+    # Создание основной папки для отчетов
+    main_folder_path = create_main_folder(cfg)
+    logging.info(f"Создана основная папка: {main_folder_path}")
 
-        # Инициализация конфигурации
-        config = Config(services=services)
-        
-        # Скачивание отчета Gatling
-        if config.services['ssh_service']:
-            logger.info("Запуск сервиса SSH")
-            ssh_service = SSHService(config)
-            report_path = ssh_service.download_last_report()
-            if report_path:
-                logger.info(f"Отчет Gatling успешно скачан: {report_path}")
-            else:
-                logger.warning("Отчет Gatling не был скачан, так как не найден на сервере")
-        
-        # Скачивание метрик Grafana
-        if config.services['grafana_service']:
-            logger.info("Запуск сервиса Grafana")
-            grafana_service = GrafanaService(config)
-            grafana_service.download_metrics()
-            logger.info("Метрики Grafana успешно скачаны")
-            
-    except Exception as e:
-        logger.error(f"Критическая ошибка: {str(e)}")
-        raise
+    # Скачивание отчета Gatling, если указан соответствующий флаг
+    if args.gatling and cfg['services'].get('ssh_service', True):
+        logging.info("Начинаем скачивание отчета Gatling...")
+        ssh_download_last_report(cfg, main_folder_path)
+
+    # Скачивание метрик Grafana, если указан соответствующий флаг
+    if args.grafana and cfg['services'].get('grafana_service', True):
+        logging.info("Начинаем скачивание метрик Grafana...")
+        metrics = load_metrics_config()
+        download_grafana_metrics(cfg, metrics, main_folder_path)
 
 if __name__ == "__main__":
     main() 
