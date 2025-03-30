@@ -1,14 +1,14 @@
 mainConfig:
   scenario: "upload"
   type_of_script: "scal"
-  from: "2025-03-27 13:13:13"
+  from: "2025-04-27 21:13:13"
   to: "2025-03-27 22:22:22"
   timezone: "Europe/Moscow"
 
 main_folder: "/Users/alex/PerformanceTesting/LANIT/gatlingScriptResults"
 services:
   ssh_service: true
-  grafana_service: false
+  grafana_service: true
 
 ssh_config:
   host: "172.19.93.113"

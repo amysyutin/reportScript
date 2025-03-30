@@ -1,15 +1,9 @@
 import argparse
-import logging
+import os
 from config import load_config, load_metrics_config
 from ssh_service import ssh_download_last_report
 from grafana_service import download_grafana_metrics
-from utils import create_main_folder
-
-# Настройка логирования с выводом в консоль
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(levelname)s - %(message)s'
-)
+from utils import create_main_folder, logger
 
 def main():
     """
@@ -34,29 +28,34 @@ def main():
         
         # Создание основной папки для отчетов
         main_folder_path = create_main_folder(cfg)
-        logging.info(f"Создана основная папка: {main_folder_path}")
+        logger.info(f"Создана основная папка: {main_folder_path}")
 
         # Скачивание отчета Gatling, если указан соответствующий флаг
         if args.gatling and cfg['services'].get('ssh_service', True):
-            logging.info("Начинаем скачивание отчета Gatling...")
+            logger.info("Начинаем скачивание отчета Gatling...")
             report_path = ssh_download_last_report(cfg, main_folder_path)
             if report_path:
-                logging.info(f"Отчет Gatling успешно скачан: {report_path}")
+                logger.info(f"Отчет Gatling успешно скачан: {report_path}")
             else:
-                logging.error("Не удалось скачать отчет Gatling")
+                logger.error("Не удалось скачать отчет Gatling")
 
         # Скачивание метрик Grafana, если указан соответствующий флаг
         if args.grafana and cfg['services'].get('grafana_service', True):
-            logging.info("Начинаем скачивание метрик Grafana...")
+            logger.info("Начинаем скачивание метрик Grafana...")
             try:
+                metrics_config_path = cfg['grafana']['metrics_config']
+                if not os.path.exists(metrics_config_path):
+                    logger.error(f"Файл конфигурации метрик не найден: {metrics_config_path}")
+                    return
+                    
                 metrics = load_metrics_config()
                 download_grafana_metrics(cfg, metrics, main_folder_path)
-                logging.info("Метрики Grafana успешно скачаны")
+                logger.info("Метрики Grafana успешно скачаны")
             except Exception as e:
-                logging.error(f"Ошибка при скачивании метрик Grafana: {str(e)}")
+                logger.error(f"Ошибка при скачивании метрик Grafana: {str(e)}")
                 
     except Exception as e:
-        logging.error(f"Критическая ошибка: {str(e)}")
+        logger.error(f"Критическая ошибка: {str(e)}")
         raise
 
 if __name__ == "__main__":

@@ -1,1 +1,171 @@
 # Чат для обсуждения изменений в ветке revolution 
+
+Что мы будем делать на этой ветке. Мы сейчас перестоим наш скрипт вот так.
+
+Что тебе нужно сделать, чтобы твой код заработал стабильно:
+Разбить код на отдельные модули:
+
+Конфигурация (главный файл с переменными)
+
+SSH-сервис (скачивание Gatling-отчётов)
+
+Grafana-сервис (скачивание метрик)
+
+Общие вспомогательные функции (работа с файлами, папками и т.д.)
+
+Использовать надёжные библиотеки:
+
+SSH и SCP лучше всего делать через paramiko.
+
+HTTP-запросы — библиотека requests.
+
+Чтение конфигураций — лучше всего через YAML (библиотека PyYAML).
+
+Чётко отделить логику от конфигурации:
+
+Создать понятный и расширяемый конфиг-файл (yaml/json).
+
+Чётко описать структуру и логику работы каждого модуля.
+
+Добавить хорошую обработку ошибок и логирование:
+
+Python-библиотека logging поможет понять, что идёт не так и почему.
+
+Использовать виртуальное окружение и requirements.txt:
+
+Это позволит иметь стабильные зависимости и избегать конфликтов.
+
+Вот как должна выглядеть структура проекта - 
+
+project/
+├── config.yml                 # Главный конфиг
+├── metrics_urls.yml           # Конфиг с метриками Grafana
+├── requirements.txt           # Зависимости
+├── src/
+│   ├── config.py              # Работа с конфигурацией
+│   ├── ssh_service.py         # Логика первого сервиса
+│   ├── grafana_service.py     # Логика второго сервиса
+│   ├── utils.py               # Общие вспомогательные функции
+│   └── main.py                # Основной управляющий файл
+
+
+config.yml
+
+main_folder: "reports"
+services:
+  ssh_service: true
+  grafana_service: true
+
+ssh_config:
+  host: "your.server.com"
+  username: "user"
+  password: "pass"
+  remote_path: "/path/to/gatling/results"
+  local_path: "./reports/gatling"
+
+grafana:
+  local_path: "./reports/metrics"
+  metrics_config: "metrics_urls.yml"
+
+
+metrics_urls.yml:
+metrics:
+  - name: "cpu_usage"
+    url: "http://grafana.com/render/d/123456?orgId=1&from=now-1h&to=now&panelId=2"
+  - name: "memory_usage"
+    url: "http://grafana.com/render/d/123456?orgId=1&from=now-1h&to=now&panelId=3"
+
+
+
+src/config.py
+import yaml
+
+def load_config(config_path='config.yml'):
+    with open(config_path, 'r') as f:
+        return yaml.safe_load(f)
+
+def load_metrics_config(path='metrics_urls.yml'):
+    with open(path, 'r') as f:
+        return yaml.safe_load(f)['metrics']
+
+src/ssh_service.py
+
+import paramiko
+import os
+import shutil
+from utils import create_folder_if_not_exists
+
+def ssh_download_last_report(cfg):
+    create_folder_if_not_exists(cfg['ssh_config']['local_path'])
+
+    ssh = paramiko.SSHClient()
+    ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+    ssh.connect(cfg['ssh_config']['host'], 
+                username=cfg['ssh_config']['username'], 
+                password=cfg['ssh_config']['password'])
+
+    sftp = ssh.open_sftp()
+
+    remote_file = f"{cfg['ssh_config']['remote_path']}/lastRun.txt"
+    with sftp.file(remote_file, "r") as file:
+        last_run_name = file.read().decode().strip()
+
+    remote_folder = f"{cfg['ssh_config']['remote_path']}/{last_run_name}"
+    local_folder = os.path.join(cfg['ssh_config']['local_path'], last_run_name)
+
+    # Скачивание всей папки
+    sftp.get(remote_folder, local_folder, callback=None)
+
+    # Переименование и удаление оригинала
+    renamed_folder = f"{local_folder}_renamed"
+    shutil.move(local_folder, renamed_folder)
+
+    ssh.close()
+
+
+src/grafana_service.py
+
+import requests
+import os
+from utils import create_folder_if_not_exists
+
+def download_grafana_metrics(cfg, metrics):
+    metrics_folder = cfg['grafana']['local_path']
+    create_folder_if_not_exists(metrics_folder)
+
+    for metric in metrics:
+        response = requests.get(metric['url'])
+        filename = os.path.join(metrics_folder, f"{metric['name']}.png")
+        with open(filename, 'wb') as f:
+            f.write(response.content)
+
+
+src/utils.py
+
+import os
+
+def create_folder_if_not_exists(path):
+    if not os.path.exists(path):
+        os.makedirs(path)
+
+
+src/main.py
+(запуск сервисов):
+
+from config import load_config, load_metrics_config
+from ssh_service import ssh_download_last_report
+from grafana_service import download_grafana_metrics
+
+cfg = load_config()
+
+if cfg['services']['ssh_service']:
+    ssh_download_last_report(cfg)
+
+if cfg['services']['grafana_service']:
+    metrics = load_metrics_config(cfg['grafana']['metrics_config'])
+    download_grafana_metrics(cfg, metrics)
+
+
+
+
+
