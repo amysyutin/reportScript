@@ -2,167 +2,7 @@ import paramiko
 import os
 import shutil
 import logging
-from utils import logger, create_folder_if_not_exists
-
-class SSHService:
-    """
-    Класс для работы с SSH-соединением и скачивания отчетов.
-    
-    Attributes:
-        config: Объект конфигурации с параметрами SSH
-        ssh: SSH-клиент
-        sftp: SFTP-клиент
-    """
-    
-    def __init__(self, config):
-        """
-        Инициализация сервиса SSH.
-        
-        Args:
-            config: Объект конфигурации с параметрами SSH
-        """
-        self.config = config
-        self.ssh = None
-        self.sftp = None
-
-    def connect(self):
-        """
-        Устанавливает SSH-соединение с сервером.
-        
-        Создает SSH-клиент, настраивает политику ключей и устанавливает соединение.
-        После успешного соединения открывает SFTP-сессию.
-        
-        Raises:
-            Exception: Если не удалось установить соединение
-        """
-        try:
-            self.ssh = paramiko.SSHClient()
-            self.ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-            self.ssh.connect(
-                self.config.ssh_config['host'],
-                username=self.config.ssh_config['username'],
-                password=self.config.ssh_config['password']
-            )
-            self.sftp = self.ssh.open_sftp()
-            logger.info("SSH-соединение установлено")
-        except Exception as e:
-            logger.error(f"Ошибка при установке SSH-соединения: {str(e)}")
-            raise
-
-    def close(self):
-        """
-        Закрывает SSH-соединение.
-        
-        Корректно закрывает SFTP-сессию и SSH-соединение.
-        """
-        if self.sftp:
-            self.sftp.close()
-        if self.ssh:
-            self.ssh.close()
-            logger.info("SSH-соединение закрыто")
-
-    def get_last_report_name(self):
-        """
-        Получает имя последнего отчета из файла lastRun.txt.
-        
-        Returns:
-            str: Имя последнего отчета
-            
-        Raises:
-            Exception: Если не удалось прочитать файл
-        """
-        try:
-            remote_file = f"{self.config.ssh_config['remote_path']}/lastRun.txt"
-            with self.sftp.file(remote_file, "r") as file:
-                last_run_name = file.read().decode().strip()
-            logger.info(f"Получено имя последнего отчета: {last_run_name}")
-            return last_run_name
-        except Exception as e:
-            logger.error(f"Ошибка при получении имени последнего отчета: {str(e)}")
-            raise
-
-    def download_report(self, report_name):
-        """
-        Скачивает отчет с сервера.
-        
-        Args:
-            report_name (str): Имя отчета для скачивания
-            
-        Returns:
-            str: Путь к скачанному отчету или None, если отчет не найден
-            
-        Raises:
-            Exception: Если возникла ошибка при скачивании
-        """
-        try:
-            # Создаем локальную директорию для отчета
-            create_folder_if_not_exists(self.config.ssh_config['local_path'])
-            
-            # Формируем пути для удаленного и локального отчета
-            remote_folder = f"{self.config.ssh_config['remote_path']}/{report_name}"
-            local_folder = os.path.join(self.config.ssh_config['local_path'], report_name)
-
-            # Проверяем существование удаленной папки
-            try:
-                self.sftp.stat(remote_folder)
-            except FileNotFoundError:
-                logger.warning(f"Папка с отчетом не найдена на сервере: {remote_folder}")
-                logger.warning("Возможно, отчет был уже скачан и удален ранее")
-                return None
-
-            # Скачиваем всю папку с отчетом
-            self.sftp.get(remote_folder, local_folder)
-            logger.info(f"Отчет скачан в {local_folder}")
-            return local_folder
-        except Exception as e:
-            logger.error(f"Ошибка при скачивании отчета: {str(e)}")
-            raise
-
-    def cleanup_server(self, report_name):
-        """
-        Удаляет отчет на сервере после успешного скачивания.
-        
-        Args:
-            report_name (str): Имя отчета для удаления
-            
-        Raises:
-            Exception: Если не удалось удалить отчет
-        """
-        try:
-            remote_folder = f"{self.config.ssh_config['remote_path']}/{report_name}"
-            self.sftp.rmdir(remote_folder)
-            logger.info(f"Отчет удален на сервере: {remote_folder}")
-        except Exception as e:
-            logger.error(f"Ошибка при удалении отчета на сервере: {str(e)}")
-            raise
-
-    def download_last_report(self):
-        """
-        Основной метод для скачивания последнего отчета.
-        
-        Выполняет следующие действия:
-        1. Устанавливает SSH-соединение
-        2. Получает имя последнего отчета
-        3. Скачивает отчет
-        4. Удаляет отчет на сервере
-        5. Закрывает соединение
-        
-        Returns:
-            str: Путь к скачанному отчету или None, если отчет не найден
-        """
-        try:
-            self.connect()
-            report_name = self.get_last_report_name()
-            local_path = self.download_report(report_name)
-            
-            if local_path is None:
-                logger.info("Пропускаем удаление отчета на сервере, так как он не найден")
-                return None
-                
-            self.cleanup_server(report_name)
-            return local_path
-        finally:
-            self.close()
+import subprocess
 
 def ssh_download_last_report(cfg, main_folder_path):
     """
@@ -175,10 +15,12 @@ def ssh_download_last_report(cfg, main_folder_path):
     Returns:
         str: Путь к скачанному отчету или None, если возникла ошибка
     """
+    ssh = None
     try:
-        # Создаем папку для отчета Gatling внутри основной папки
+        # Создаем базовую директорию для отчетов Gatling
         local_path = os.path.join(main_folder_path, "gatling")
-        create_folder_if_not_exists(local_path)
+        os.makedirs(local_path, exist_ok=True)
+        logging.info(f"Создана базовая директория: {local_path}")
         
         # Устанавливаем SSH-соединение
         ssh = paramiko.SSHClient()
@@ -192,7 +34,12 @@ def ssh_download_last_report(cfg, main_folder_path):
         # Получаем имя последнего отчета из файла lastRun.txt
         stdin, stdout, stderr = ssh.exec_command(f"cat {cfg['ssh_config']['remote_path']}/lastRun.txt")
         report_name = stdout.read().decode().strip()
+        error = stderr.read().decode()
         
+        if error:
+            logging.error(f"Ошибка при чтении lastRun.txt: {error}")
+            return None
+            
         if not report_name:
             logging.warning("Имя отчета не найдено в lastRun.txt")
             return None
@@ -201,10 +48,30 @@ def ssh_download_last_report(cfg, main_folder_path):
         remote_path = os.path.join(cfg['ssh_config']['remote_path'], report_name)
         local_report_path = os.path.join(local_path, report_name)
         
-        # Открываем SFTP-сессию и скачиваем отчет
-        sftp = ssh.open_sftp()
-        try:
-            sftp.get(remote_path, local_report_path)
+        logging.info(f"Попытка скачать отчет: {remote_path} -> {local_report_path}")
+        
+        # Проверяем существование удаленной директории через SSH
+        stdin, stdout, stderr = ssh.exec_command(f"test -d {remote_path} && echo 'exists'")
+        if not stdout.read().decode().strip():
+            logging.warning(f"Отчет не найден на сервере: {remote_path}")
+            return None
+            
+        # Удаляем локальную директорию отчета, если она существует
+        if os.path.exists(local_report_path):
+            if os.path.isdir(local_report_path):
+                shutil.rmtree(local_report_path)
+            else:
+                os.remove(local_report_path)
+            logging.info(f"Удалена существующая директория/файл отчета: {local_report_path}")
+            
+        # Формируем команду SCP для копирования всей директории
+        scp_command = f'scp -r "{cfg["ssh_config"]["username"]}@{cfg["ssh_config"]["host"]}:{remote_path}" "{local_path}"'
+        logging.info(f"Выполняем команду: {scp_command}")
+        
+        # Выполняем команду через shell
+        result = subprocess.run(scp_command, shell=True, capture_output=True, text=True)
+        
+        if result.returncode == 0:
             logging.info(f"Отчет успешно скачан: {local_report_path}")
             
             # Удаляем отчет с сервера после успешного скачивания
@@ -212,18 +79,18 @@ def ssh_download_last_report(cfg, main_folder_path):
             if stderr.channel.recv_exit_status() == 0:
                 logging.info(f"Отчет удален с сервера: {remote_path}")
             else:
-                logging.warning(f"Не удалось удалить отчет с сервера: {stderr.read().decode()}")
+                error = stderr.read().decode()
+                logging.warning(f"Не удалось удалить отчет с сервера: {error}")
                 
             return local_report_path
-            
-        except FileNotFoundError:
-            logging.warning(f"Отчет не найден на сервере: {remote_path}")
+        else:
+            logging.error(f"Ошибка при выполнении scp: {result.stderr}")
             return None
-        finally:
-            sftp.close()
             
     except Exception as e:
         logging.error(f"Ошибка при скачивании отчета: {str(e)}")
+        logging.error(f"Тип ошибки: {type(e).__name__}")
         return None
     finally:
-        ssh.close() 
+        if ssh:
+            ssh.close() 

@@ -1,14 +1,14 @@
 mainConfig:
   scenario: "upload"
-  type_of_script: "max"
-  from: "2025-03-28 18:48:18"
-  to: "2025-03-28 20:27:29"
+  type_of_script: "scal"
+  from: "2025-03-27 13:13:13"
+  to: "2025-03-27 22:22:22"
   timezone: "Europe/Moscow"
 
-main_folder: "reports"
+main_folder: "/Users/alex/PerformanceTesting/LANIT/gatlingScriptResults"
 services:
   ssh_service: true
-  grafana_service: true
+  grafana_service: false
 
 ssh_config:
   host: "172.19.93.113"
@@ -20,5 +20,5 @@ ssh_config:
 grafana:
   local_path: "./reports/metrics"
   metrics_config: "metrics_urls.yml"
-  api_key: "glc_eyJvIjoiMTAwMDAwIiwibiI6ImFkbWluIiwiaSI6MTcwOTk5OTk5OTk5OSwicCI6Im5vbmUifQ=="
-  timezone: "Europe/Moscow" 
+  api_key: "Bearer glsa_svq6QxlK1dOEPy8dn76GYgpf215fdmIf_2e8d9b52"
+  timezone: "Europe/Moscow"

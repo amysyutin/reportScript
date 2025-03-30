@@ -22,29 +22,42 @@ def main():
     4. Скачивает отчет Gatling (если указан флаг -gatling)
     5. Скачивает метрики Grafana (если указан флаг -grafana)
     """
-    # Настройка парсера аргументов командной строки
-    parser = argparse.ArgumentParser(description='Скачивание отчетов и метрик')
-    parser.add_argument('-gatling', action='store_true', help='Скачать отчет Gatling')
-    parser.add_argument('-grafana', action='store_true', help='Скачать метрики Grafana')
-    args = parser.parse_args()
+    try:
+        # Настройка парсера аргументов командной строки
+        parser = argparse.ArgumentParser(description='Скачивание отчетов и метрик')
+        parser.add_argument('-gatling', action='store_true', help='Скачать отчет Gatling')
+        parser.add_argument('-grafana', action='store_true', help='Скачать метрики Grafana')
+        args = parser.parse_args()
 
-    # Загрузка конфигурации из файла config.yml
-    cfg = load_config()
-    
-    # Создание основной папки для отчетов
-    main_folder_path = create_main_folder(cfg)
-    logging.info(f"Создана основная папка: {main_folder_path}")
+        # Загрузка конфигурации из файла config.yml
+        cfg = load_config()
+        
+        # Создание основной папки для отчетов
+        main_folder_path = create_main_folder(cfg)
+        logging.info(f"Создана основная папка: {main_folder_path}")
 
-    # Скачивание отчета Gatling, если указан соответствующий флаг
-    if args.gatling and cfg['services'].get('ssh_service', True):
-        logging.info("Начинаем скачивание отчета Gatling...")
-        ssh_download_last_report(cfg, main_folder_path)
+        # Скачивание отчета Gatling, если указан соответствующий флаг
+        if args.gatling and cfg['services'].get('ssh_service', True):
+            logging.info("Начинаем скачивание отчета Gatling...")
+            report_path = ssh_download_last_report(cfg, main_folder_path)
+            if report_path:
+                logging.info(f"Отчет Gatling успешно скачан: {report_path}")
+            else:
+                logging.error("Не удалось скачать отчет Gatling")
 
-    # Скачивание метрик Grafana, если указан соответствующий флаг
-    if args.grafana and cfg['services'].get('grafana_service', True):
-        logging.info("Начинаем скачивание метрик Grafana...")
-        metrics = load_metrics_config()
-        download_grafana_metrics(cfg, metrics, main_folder_path)
+        # Скачивание метрик Grafana, если указан соответствующий флаг
+        if args.grafana and cfg['services'].get('grafana_service', True):
+            logging.info("Начинаем скачивание метрик Grafana...")
+            try:
+                metrics = load_metrics_config()
+                download_grafana_metrics(cfg, metrics, main_folder_path)
+                logging.info("Метрики Grafana успешно скачаны")
+            except Exception as e:
+                logging.error(f"Ошибка при скачивании метрик Grafana: {str(e)}")
+                
+    except Exception as e:
+        logging.error(f"Критическая ошибка: {str(e)}")
+        raise
 
 if __name__ == "__main__":
     main() 
