@@ -1,0 +1,11 @@
+metrics:
+  - name: "k8s_panel_5"
+    url: "http://172.19.93.113:3000/render/d-solo/123456?orgId=1&from=now-1h&to=now&panelId=5"
+  - name: "k8s_panel_7"
+    url: "http://172.19.93.113:3000/render/d-solo/123456?orgId=1&from=now-1h&to=now&panelId=7"
+  - name: "analytics_panel_199"
+    url: "http://172.19.93.113:3000/render/d-solo/123456?orgId=1&from=now-1h&to=now&panelId=199"
+  - name: "analytics_panel_176"
+    url: "http://172.19.93.113:3000/render/d-solo/123456?orgId=1&from=now-1h&to=now&panelId=176"
+  - name: "analytics_panel_49"
+    url: "http://172.19.93.113:3000/render/d-solo/123456?orgId=1&from=now-1h&to=now&panelId=49" 

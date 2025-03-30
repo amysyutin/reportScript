@@ -1,0 +1,17 @@
+main_folder: "reports"
+services:
+  ssh_service: true
+  grafana_service: true
+
+ssh_config:
+  host: "172.19.93.113"
+  username: "tester"
+  password: "tester"
+  remote_path: "/home/tester/Gatling/dh-nt-gatling/target/gatling"
+  local_path: "./reports/gatling"
+
+grafana:
+  local_path: "./reports/metrics"
+  metrics_config: "metrics_urls.yml"
+  api_key: "glc_eyJvIjoiMTAwMDAwIiwibiI6ImFkbWluIiwiaSI6MTcwOTk5OTk5OTk5OSwicCI6Im5vbmUifQ=="
+  timezone: "Europe/Moscow" 
