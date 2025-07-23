@@ -56,6 +56,27 @@ def parse_datetime(dt_str):
     """
     return datetime.strptime(dt_str, "%Y-%m-%d %H:%M:%S")
 
+def to_utc_iso(dt_str, tz_str):
+    """Convert a local datetime string to UTC ISO8601 with Z suffix.
+
+    Parameters
+    ----------
+    dt_str : str
+        Datetime as ``YYYY-MM-DD HH:MM:SS`` in the given timezone.
+    tz_str : str
+        Timezone name, e.g. ``Europe/Moscow``.
+
+    Returns
+    -------
+    str
+        Time converted to UTC in ``YYYY-MM-DDTHH:MM:SSZ`` format.
+    """
+    tz = pytz.timezone(tz_str)
+    dt = datetime.strptime(dt_str, "%Y-%m-%d %H:%M:%S")
+    local_dt = tz.localize(dt)
+    utc_dt = local_dt.astimezone(pytz.UTC)
+    return utc_dt.strftime("%Y-%m-%dT%H:%M:%SZ")
+
 def ensure_file_exists(file_path):
     """
     Проверяет существование файла.
