@@ -80,34 +80,23 @@ def create_main_folder_name(cfg):
     
     Args:
         cfg (dict): Конфигурационный словарь с параметрами:
-            - mainConfig.timezone: часовой пояс
-            - mainConfig.from: начальное время
+            - mainConfig.from: начальное время (строка)
             - mainConfig.type_of_script: тип скрипта
             - mainConfig.scenario: название сценария
             
     Returns:
-        str: Имя папки в формате "DD.MM.YY_scenario_HH.MM_type"
+        str: Имя папки в формате "from scenario type_of_script"
     """
     # Логируем входные данные
     logging.info(f"Создание имени папки из конфига: {cfg['mainConfig']}")
-    
-    # Получаем часовой пояс из конфигурации
-    tz = pytz.timezone(cfg['mainConfig']['timezone'])
-    
-    # Конвертируем строку времени в объект datetime с учетом часового пояса
-    from_time = datetime.strptime(cfg['mainConfig']['from'], "%Y-%m-%d %H:%M:%S").astimezone(tz)
-    logging.info(f"Преобразованное время: {from_time}")
 
-    # Форматируем дату и время для имени папки
-    date_str = from_time.strftime("%d.%m.%y")
-    time_str = from_time.strftime("%H.%M")
-    
-    # Получаем тип скрипта и сценарий
+    # Используем строку времени как есть
+    from_str = cfg['mainConfig']['from']
     script_type = cfg['mainConfig']['type_of_script']
     scenario = cfg['mainConfig']['scenario']
-    
+
     # Формируем имя папки
-    folder_name = f"{date_str}_{scenario}_{time_str}_{script_type}"
+    folder_name = f"{from_str} {scenario} {script_type}"
     logging.info(f"Сформированное имя папки: {folder_name}")
     
     return folder_name

@@ -1,0 +1,85 @@
+Давайте проследим цепочку вызовов методов при запуске с флагом -grafana:
+Начинается в main.py:
+
+if args.grafana:
+    grafana_report = GrafanaReport(config_manager)
+    grafana_report.download_metrics(metrics_dir)
+
+Создается экземпляр GrafanaReport, который в конструкторе:
+
+def __init__(self, config_manager):
+    self.config_manager = config_manager
+    self.grafana_config = config_manager.get_grafana_config()
+    self.api_key = self.grafana_config.get('api_key')
+    self.metrics_config_path = config_manager.get_metrics_config_path()
+    self.metrics_config = self._load_metrics_config()
+    self.timezone = config_manager.get_main_config().get('timezone', 'UTC')
+
+Вызывается метод download_metrics, который:
+
+def download_metrics(self, output_dir):
+    # Создает директорию если не существует
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+    
+    headers = {'Authorization': self.api_key}
+    
+    # Для каждой метрики из metrics_urls.yml:
+    for metric_name, metric_url in self.metrics_config.items():
+        # Конвертирует URL (добавляет время и timezone)
+        render_url = self._convert_dashboard_url_to_render(metric_url)
+        
+        # Делает запрос к Grafana
+        response = requests.get(render_url, headers=headers)
+        
+        # Сохраняет результат в файл
+        output_path = os.path.join(output_dir, f"{metric_name}.png")
+        with open(output_path, 'wb') as f:
+            f.write(response.content)
+
+При конвертации URL вызывается _convert_dashboard_url_to_render:
+
+def _convert_dashboard_url_to_render(self, dashboard_url):
+    # Получает время из config.yml через config_manager
+    from_time, to_time = self.config_manager.get_formatted_time_range()
+    
+    # Добавляет параметры времени к URL
+    separator = '&' if '?' in dashboard_url else '?'
+    render_url = f"{dashboard_url}{separator}from={from_time}&to={to_time}&timezone={self.timezone}"
+    
+    return render_url
+
+config_manager.get_formatted_time_range() вызывает:
+
+def get_formatted_time_range(self):
+    main_config = self.get_main_config()
+    from_time = self.format_time_for_grafana(main_config.get('from'))
+    to_time = self.format_time_for_grafana(main_config.get('to'))
+    return from_time, to_time
+
+И наконец format_time_for_grafana:
+
+def format_time_for_grafana(self, time_str):
+    # Получает timezone из конфига
+    timezone = self.get_main_config().get('timezone', 'UTC')
+    tz = pytz.timezone(timezone)
+    
+    # Парсит время с учетом timezone
+    dt = datetime.strptime(time_str, "%Y-%m-%d %H:%M:%S")
+    dt = tz.localize(dt)
+    
+    # Конвертирует в UTC
+    dt_utc = dt.astimezone(pytz.UTC)
+    
+    # Форматирует в ISO 8601
+    return dt_utc.strftime("%Y-%m-%dT%H:%M:%S.000Z")
+
+
+Итоговая цепочка:
+
+main.py (-grafana)
+  → GrafanaReport.__init__()
+  → GrafanaReport.download_metrics()
+    → GrafanaReport._convert_dashboard_url_to_render()
+      → ConfigManager.get_formatted_time_range()
+        → ConfigManager.format_time_for_grafana()

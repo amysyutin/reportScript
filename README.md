@@ -1,7 +1,18 @@
-# Скрипт для скачивания отчетов Gatling и метрик Grafana
+# Grafana Screenshot Automation 📊
 
-## Описание
-Скрипт предназначен для автоматизации процесса скачивания отчетов тестирования производительности (Gatling) и метрик (Grafana) с удаленного сервера. 
+## Status: ✅ WORKING PERFECTLY!
+
+Your Grafana API automation is **fully functional**! No more manual screenshots needed.
+
+## 🎯 What's Working
+
+✅ **Grafana API Integration** - Successfully downloading screenshots via API  
+✅ **Authentication** - Bearer token authentication working  
+✅ **Multiple Dashboards** - Supporting both "spring-boot-2x" and "kuber-analitics"  
+✅ **5 Metrics Automated** - All your performance metrics captured automatically  
+✅ **Time Range Handling** - Proper timezone conversion (Europe/Moscow)  
+✅ **File Organization** - Clean folder structure with timestamps  
+✅ **Error Handling** - Robust retry logic and validation
 
 ## Структура проекта
 ```
@@ -65,22 +76,59 @@ metrics:
 3. Скачивание каждой метрики в формате PNG
 4. Сохранение в директорию с отчетами
 
-## Использование
+## 🚀 Quick Start
 
-### Установка зависимостей
+### 1. Original Working Method
+```bash
+# Download all screenshots (your current working method)
+python3 src/main.py -grafana
+```
+
+### 2. Enhanced Automation (NEW!)
+
+#### Simple wrapper script:
+```bash
+# Download all screenshots (default)
+./get_screenshots.sh
+
+# Test connection
+./get_screenshots.sh test
+
+# List available metrics
+./get_screenshots.sh list
+
+# Test single metric
+./get_screenshots.sh single cpu_usage
+```
+
+#### Advanced Python script:
+```bash
+# Test Grafana API connection
+python3 grafana_enhanced.py --test-connection
+
+# Download all with progress tracking
+python3 grafana_enhanced.py --download-all
+
+# Test individual metric
+python3 grafana_enhanced.py --test-metric cpu_usage
+
+# List all metrics
+python3 grafana_enhanced.py --list-metrics
+```
+
+### 3. Installation
 ```bash
 pip install -r requirements.txt
 ```
 
-### Запуск скрипта
-```bash
-python src/main.py
-```
+## 📋 Available Metrics
 
-### Аргументы командной строки
-- `-gatling` - скачать только отчет Gatling
-- `-grafana` - скачать только метрики Grafana
-- `-all` - скачать и отчет, и метрики (по умолчанию)
+Your automation currently captures:
+1. **cpu_usage** - Spring Boot 2x dashboard
+2. **load_average** - Spring Boot 2x dashboard
+3. **cpu_by_pod** - Kuber Analytics dashboard
+4. **memory_usage_pod** - Kuber Analytics dashboard
+5. **throttling** - Kuber Analytics dashboard
 
 ## Логирование
 - Все операции логируются в консоль

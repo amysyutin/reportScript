@@ -2,42 +2,45 @@ import os
 import requests
 from datetime import datetime
 import pytz
-from utils import logger
+import logging
 import urllib.parse
+import urllib3
 
-def convert_dashboard_url_to_render(url):
+# Отключаем предупреждения о небезопасном SSL
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+
+def build_grafana_url(metric_config, base_url, from_time, to_time, timezone):
     """
-    Преобразует URL дашборда в URL для render.
+    Формирует URL для рендеринга панели Grafana.
     
     Args:
-        url (str): URL дашборда
+        metric_config (dict): Конфигурация метрики из metrics_urls.yml
+        base_url (str): Базовый URL Grafana
+        from_time (datetime): Начальное время
+        to_time (datetime): Конечное время
+        timezone (str): Часовой пояс
         
     Returns:
-        str: URL для render
+        str: Полный URL для рендеринга панели
     """
-    # Извлекаем ID дашборда и панели
-    dashboard_id = url.split('/d/')[1].split('/')[0]
-    panel_id = url.split('viewPanel=')[1]
-    
     # Формируем базовый URL для render
-    base_url = url.split('/d/')[0]
-    render_url = f"{base_url}/render/d-solo/{dashboard_id}"
+    render_url = f"{base_url}/render/d-solo/{metric_config['dashboard_uid']}"
     
-    # Добавляем параметры
+    # Базовые параметры
     params = {
-        'orgId': '1',
-        'panelId': panel_id,
-        'width': '1000',
-        'height': '500',
+        'orgId': str(metric_config['orgId']),
+        'panelId': str(metric_config['panelId']),
+        'width': str(metric_config['width']),
+        'height': str(metric_config['height']),
         'timeout': '60',
-        'tz': 'Europe/Moscow'
+        'tz': timezone,
+        'from': int(from_time.timestamp() * 1000),
+        'to': int(to_time.timestamp() * 1000)
     }
     
-    # Добавляем переменные из оригинального URL
-    original_params = dict(urllib.parse.parse_qsl(urllib.parse.urlparse(url).query))
-    for key, value in original_params.items():
-        if key.startswith('var-'):
-            params[key] = value
+    # Добавляем переменные из конфига
+    if 'vars' in metric_config:
+        params.update(metric_config['vars'])
     
     # Формируем финальный URL
     query_string = urllib.parse.urlencode(params)
@@ -47,29 +50,19 @@ def download_grafana_metrics(cfg, metrics, main_folder_path):
     """
     Скачивает метрики из Grafana.
     
-    Функция выполняет следующие действия:
-    1. Создает папку для метрик
-    2. Настраивает заголовки для запросов к Grafana
-    3. Получает временной диапазон из конфигурации
-    4. Скачивает каждую метрику в указанном временном диапазоне
-    
     Args:
-        cfg (dict): Конфигурационный словарь с параметрами:
-            - grafana.api_key: API ключ для доступа к Grafana
-            - mainConfig.timezone: часовой пояс
-            - mainConfig.from: начальное время
-            - mainConfig.to: конечное время
-        metrics (dict): Словарь с метриками и их URL
+        cfg (dict): Конфигурационный словарь
+        metrics (list): Список метрик из metrics_urls.yml
         main_folder_path (str): Путь к основной папке для сохранения метрик
         
     Raises:
         Exception: Если возникла ошибка при скачивании метрик
     """
     try:
-        # Создаем папку для метрик внутри основной папки
+        # Создаем папку для метрик
         metrics_folder = os.path.join(main_folder_path, "metrics")
         os.makedirs(metrics_folder, exist_ok=True)
-        logger.info(f"Создана папка для метрик: {metrics_folder}")
+        logging.info(f"Создана папка для метрик: {metrics_folder}")
         
         # Настраиваем заголовки для запросов к Grafana
         headers = {
@@ -85,31 +78,32 @@ def download_grafana_metrics(cfg, metrics, main_folder_path):
         for metric in metrics:
             try:
                 metric_name = metric['name']
-                metric_url = metric['url']
+                logging.info(f"Скачивание метрики {metric_name}...")
                 
-                # Преобразуем URL дашборда в URL для render
-                render_url = convert_dashboard_url_to_render(metric_url)
+                # Формируем URL для рендеринга
+                render_url = build_grafana_url(
+                    metric,
+                    cfg['grafana']['base_url'],
+                    from_time,
+                    to_time,
+                    cfg['mainConfig']['timezone']
+                )
                 
-                # Добавляем временной диапазон
-                render_url = f"{render_url}&from={int(from_time.timestamp()*1000)}&to={int(to_time.timestamp()*1000)}"
+                # Выполняем запрос к Grafana с отключенной проверкой SSL
+                response = requests.get(render_url, headers=headers, verify=False)
+                response.raise_for_status()
                 
-                # Формируем команду curl
+                # Сохраняем результат
                 output_file = os.path.join(metrics_folder, f"{metric_name}.png")
-                curl_command = f'curl -L -k -v --connect-timeout 30 --max-time 120 -H "Authorization: {cfg["grafana"]["api_key"]}" "{render_url}" -o "{output_file}"'
+                with open(output_file, 'wb') as f:
+                    f.write(response.content)
                 
-                logger.info(f"Выполняем команду: {curl_command}")
-                
-                # Выполняем команду через shell
-                result = os.system(curl_command)
-                
-                if result == 0:
-                    logger.info(f"Метрика {metric_name} успешно скачана")
-                else:
-                    logger.error(f"Ошибка при скачивании метрики {metric_name}")
+                logging.info(f"Метрика {metric_name} успешно скачана в {output_file}")
                 
             except Exception as e:
-                logger.error(f"Ошибка при скачивании метрики {metric_name}: {str(e)}")
+                logging.error(f"Ошибка при скачивании метрики {metric_name}: {str(e)}")
+                continue
                 
     except Exception as e:
-        logger.error(f"Ошибка при скачивании метрик Grafana: {str(e)}")
+        logging.error(f"Ошибка при скачивании метрик Grafana: {str(e)}")
         raise 

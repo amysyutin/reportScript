@@ -1,11 +1,85 @@
 metrics:
-  - name: "k8s_panel_5"
-    url: "https://grafana.stress-astra.lan.lanit.ru/d/85a562078cdf77779eaa1add43ccec1e/kubernetes-compute-resources-namespace-pods?orgId=1&from=2025-03-28T11:48:18.000Z&to=2025-03-28T13:27:29.000Z&timezone=utc%2B3&var-datasource=default&var-cluster=&var-namespace=astra-stress&refresh=10s&viewPanel=panel-5"
-  - name: "k8s_panel_7"
-    url: "https://grafana.stress-astra.lan.lanit.ru/d/85a562078cdf77779eaa1add43ccec1e/kubernetes-compute-resources-namespace-pods?orgId=1&from=2025-03-28T11:48:18.000Z&to=2025-03-28T13:27:29.000Z&timezone=utc%2B3&var-datasource=default&var-cluster=&var-namespace=astra-stress&refresh=10s&viewPanel=panel-7"
-  - name: "analytics_panel_199"
-    url: "https://grafana.stress-astra.lan.lanit.ru/d/85a562078cdf77779eaa1add43ccec1e/kubernetes-compute-resources-namespace-pods?orgId=1&from=2025-03-28T11:48:18.000Z&to=2025-03-28T13:27:29.000Z&timezone=utc%2B3&var-datasource=default&var-cluster=&var-namespace=astra-stress&refresh=10s&viewPanel=panel-199"
-  - name: "analytics_panel_176"
-    url: "https://grafana.stress-astra.lan.lanit.ru/d/85a562078cdf77779eaa1add43ccec1e/kubernetes-compute-resources-namespace-pods?orgId=1&from=2025-03-28T11:48:18.000Z&to=2025-03-28T13:27:29.000Z&timezone=utc%2B3&var-datasource=default&var-cluster=&var-namespace=astra-stress&refresh=10s&viewPanel=panel-176"
-  - name: "analytics_panel_49"
-    url: "https://grafana.stress-astra.lan.lanit.ru/d/85a562078cdf77779eaa1add43ccec1e/kubernetes-compute-resources-namespace-pods?orgId=1&from=2025-03-28T11:48:18.000Z&to=2025-03-28T13:27:29.000Z&timezone=utc%2B3&var-datasource=default&var-cluster=&var-namespace=astra-stress&refresh=10s&viewPanel=panel-49" 
+  - name: "cpu_usage"
+    dashboard_uid: "spring-boot-2x"
+    dashboard_name: "spring-boot-2x"
+    orgId: 1
+    panelId: 95
+    width: 1000
+    height: 500
+    vars:
+      var-application: "dh-files-service"
+      var-instance: "dh-files-service.astra-stress.svc:8080"
+      var-memory_pool_heap: "$__all"
+      var-memory_pool_nonheap: "$__all"
+      timeout: 60
+
+  - name: "load_average"
+    dashboard_uid: "spring-boot-2x"
+    dashboard_name: "spring-boot-2x"
+    orgId: 1
+    panelId: 96
+    width: 1000
+    height: 500
+    vars:
+      var-application: "dh-files-service"
+      var-instance: "dh-files-service.astra-stress.svc:8080"
+      var-memory_pool_heap: "$__all"
+      var-memory_pool_nonheap: "$__all"
+      timeout: 60
+
+  - name: "cpu_by_pod"
+    dashboard_uid: "q8KMdnmnk"
+    dashboard_name: "kuber-analitics"
+    orgId: 1
+    panelId: 199
+    width: 1000
+    height: 500
+    vars:
+      var-node: "$__all"
+      var-datasource: "prometheus"
+      var-loki: "P8E80F9AEF21F6940"
+      var-namespace: "astra-stress"
+      var-container: ["dh-documents-service", "dh-files-service"]
+      var-pod: "$__all"
+      var-less_then_perc: "$__all"
+      var-more_then_perc: "$__all"
+      var-query: ""
+      timeout: 60
+
+  - name: "memory_usage_pod"
+    dashboard_uid: "q8KMdnmnk"
+    dashboard_name: "kuber-analitics"
+    orgId: 1
+    panelId: 176
+    width: 1000
+    height: 500
+    vars:
+      var-node: "$__all"
+      var-datasource: "prometheus"
+      var-loki: "P8E80F9AEF21F6940"
+      var-namespace: "astra-stress"
+      var-container: ["dh-documents-service", "dh-files-service"]
+      var-pod: "$__all"
+      var-less_then_perc: "$__all"
+      var-more_then_perc: "$__all"
+      var-query: ""
+      timeout: 60
+
+  - name: "throttling"
+    dashboard_uid: "q8KMdnmnk"
+    dashboard_name: "kuber-analitics"
+    orgId: 1
+    panelId: 49
+    width: 1000
+    height: 500
+    vars:
+      var-node: "$__all"
+      var-datasource: "prometheus"
+      var-loki: "P8E80F9AEF21F6940"
+      var-namespace: "astra-stress"
+      var-container: ["dh-documents-service", "dh-files-service"]
+      var-pod: "$__all"
+      var-less_then_perc: "$__all"
+      var-more_then_perc: "$__all"
+      var-query: ""
+      timeout: 60
