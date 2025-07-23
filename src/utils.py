@@ -62,7 +62,7 @@ def to_utc_iso(dt_str, tz_str):
     Parameters
     ----------
     dt_str : str
-        Datetime as ``YYYY-MM-DD HH:MM:SS`` in the given timezone.
+        Datetime as ``YYYY-MM-DD HH:MM:SS`` or ``YYYY-MM-DD HH:MM:SS.fff`` in the given timezone.
     tz_str : str
         Timezone name, e.g. ``Europe/Moscow``.
 
@@ -72,7 +72,19 @@ def to_utc_iso(dt_str, tz_str):
         Time converted to UTC in ``YYYY-MM-DDTHH:MM:SSZ`` format.
     """
     tz = pytz.timezone(tz_str)
-    dt = datetime.strptime(dt_str, "%Y-%m-%d %H:%M:%S")
+    
+    # Поддерживаем формат с миллисекундами и без них
+    try:
+        # Сначала пробуем формат с миллисекундами
+        dt = datetime.strptime(dt_str, "%Y-%m-%d %H:%M:%S.%f")
+    except ValueError:
+        # Если не получилось, пробуем формат без миллисекунд
+        try:
+            dt = datetime.strptime(dt_str, "%Y-%m-%d %H:%M:%S")
+        except ValueError as e:
+            logger.error(f"Ошибка парсинга времени '{dt_str}': {str(e)}")
+            raise
+    
     local_dt = tz.localize(dt)
     utc_dt = local_dt.astimezone(pytz.UTC)
     return utc_dt.strftime("%Y-%m-%dT%H:%M:%SZ")

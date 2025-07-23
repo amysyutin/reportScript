@@ -25,16 +25,27 @@ def main():
         args = parser.parse_args()
 
         # Загрузка конфигурации из файла config.yml
-        cfg = load_config()
+        cfg = load_config('config.yml')
         
         # Создание основной папки для отчетов
         main_folder_path = create_main_folder(cfg)
         logger.info(f"Создана основная папка: {main_folder_path}")
 
+        # Извлекаем сервисы из конфигурации
         service_flags = cfg.get('services', {})
-        grafana_enabled = service_flags.pop('grafana_service', True)
-        ssh_enabled = service_flags.pop('ssh_service', True)
-        metric_services = [name for name, enabled in service_flags.items() if enabled]
+        
+        # Отделяем системные сервисы от сервисов приложений
+        grafana_enabled = service_flags.get('grafana_service', True)
+        ssh_enabled = service_flags.get('ssh_service', True)
+        
+        # Собираем только включенные сервисы приложений (исключая системные)
+        system_services = {'grafana_service', 'ssh_service'}
+        metric_services = [
+            name for name, enabled in service_flags.items() 
+            if enabled and name not in system_services
+        ]
+        
+        logger.info(f"Включенные сервисы приложений: {metric_services}")
 
         # Скачивание отчета Gatling, если указан соответствующий флаг
         if args.gatling and ssh_enabled:
@@ -50,6 +61,7 @@ def main():
             logger.info("Начинаем скачивание метрик Grafana...")
             try:
                 metrics_config_path = cfg['grafana']['metrics_config']
+                # Используем путь относительно текущей директории
                 if not os.path.exists(metrics_config_path):
                     logger.error(f"Файл конфигурации метрик не найден: {metrics_config_path}")
                     return

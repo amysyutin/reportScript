@@ -16,8 +16,12 @@ def load_config(config_path='config.yml'):
         Exception: Если не удалось загрузить конфигурацию
     """
     try:
+        # Если запускаем из src/, ищем файл на уровень выше
+        if not os.path.exists(config_path) and os.path.basename(os.getcwd()) == 'src':
+            config_path = os.path.join('..', config_path)
+        
         ensure_file_exists(config_path)
-        with open(config_path, 'r') as f:
+        with open(config_path, 'r', encoding='utf-8') as f:
             config = yaml.safe_load(f)
         logger.info(f"Загружен конфиг из {config_path}")
         return config
@@ -39,8 +43,12 @@ def load_metrics_config(metrics_path='metrics_urls.yml'):
         Exception: Если не удалось загрузить конфигурацию метрик
     """
     try:
+        # Если запускаем из src/, ищем файл на уровень выше
+        if not os.path.exists(metrics_path) and os.path.basename(os.getcwd()) == 'src':
+            metrics_path = os.path.join('..', metrics_path)
+            
         ensure_file_exists(metrics_path)
-        with open(metrics_path, 'r') as f:
+        with open(metrics_path, 'r', encoding='utf-8') as f:
             metrics_config = yaml.safe_load(f)
         logger.info(f"Загружен конфиг метрик из {metrics_path}")
         return metrics_config['metrics']
