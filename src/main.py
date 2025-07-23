@@ -1,6 +1,7 @@
 import argparse
 import os
-from config import load_config, load_metrics_config
+from config import load_config
+from config_loader import load_metrics_config
 from ssh_service import ssh_download_last_report
 from grafana_service import download_grafana_metrics
 from utils import create_main_folder, logger
@@ -30,8 +31,13 @@ def main():
         main_folder_path = create_main_folder(cfg)
         logger.info(f"Создана основная папка: {main_folder_path}")
 
+        service_flags = cfg.get('services', {})
+        grafana_enabled = service_flags.pop('grafana_service', True)
+        ssh_enabled = service_flags.pop('ssh_service', True)
+        metric_services = [name for name, enabled in service_flags.items() if enabled]
+
         # Скачивание отчета Gatling, если указан соответствующий флаг
-        if args.gatling and cfg['services'].get('ssh_service', True):
+        if args.gatling and ssh_enabled:
             logger.info("Начинаем скачивание отчета Gatling...")
             report_path = ssh_download_last_report(cfg, main_folder_path)
             if report_path:
@@ -40,16 +46,16 @@ def main():
                 logger.error("Не удалось скачать отчет Gatling")
 
         # Скачивание метрик Grafana, если указан соответствующий флаг
-        if args.grafana and cfg['services'].get('grafana_service', True):
+        if args.grafana and grafana_enabled:
             logger.info("Начинаем скачивание метрик Grafana...")
             try:
                 metrics_config_path = cfg['grafana']['metrics_config']
                 if not os.path.exists(metrics_config_path):
                     logger.error(f"Файл конфигурации метрик не найден: {metrics_config_path}")
                     return
-                    
-                metrics = load_metrics_config()
-                download_grafana_metrics(cfg, metrics, main_folder_path)
+
+                metrics = load_metrics_config(metrics_config_path)
+                download_grafana_metrics(cfg, metrics, main_folder_path, metric_services)
                 logger.info("Метрики Grafana успешно скачаны")
             except Exception as e:
                 logger.error(f"Ошибка при скачивании метрик Grafana: {str(e)}")
