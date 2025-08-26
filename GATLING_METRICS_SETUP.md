@@ -1,153 +1,116 @@
-# Gatling Metrics Setup Guide
+# Настройка загрузки Gatling‑метрик
 
-## Overview
+## Обзор
 
-This guide explains how to configure and use the new Gatling metrics functionality that downloads performance metrics from a secondary Grafana dashboard.
+Функциональность позволяет скачивать панели из Gatling‑дашборда (в отдельной Grafana) как PNG. Inteграция встроена в общий флаг `-grafana` и использует единый временной диапазон.
 
-## Configuration Steps
+## Шаги конфигурации
 
-### 1. Enable Gatling Metrics Service
+### 1) Включите сервис Gatling‑метрик
 
-In your `config.yml`, ensure the service is enabled:
-
+В `config.yml`:
 ```yaml
 services:
-  gatling_metrics_service: true  # Enable Gatling metrics download
+  gatling_metrics_service: true
 ```
 
-### 2. Configure Secondary Grafana Connection
+### 2) Укажите подключение ко второй Grafana
 
-Add the Gatling Grafana configuration section to `config.yml`:
-
+В `config.yml` (переменные можно задать через `.env`):
 ```yaml
-# Configuration for Gatling metrics (secondary Grafana)
 gatling_grafana:
-  local_path: "./reports/metrics/gatling_metrics"
+  local_path: "${GATLING_GRAFANA_LOCAL_PATH}"
   base_url: "${GATLING_GRAFANA_BASE_URL}"
   api_key: "${GATLING_GRAFANA_API_KEY}"
   timezone: "${TIMEZONE}"
-  script_name: "Attribute_Search_2"  # Change this to your test script name
   gatling_metrics_config: "gatling_metrics_urls.yml"
+  gatling_scripts:
+    Attribute_Search_1: true
+    Attribute_Search_2: true
+    # ... включайте/выключайте нужные скрипты
 ```
 
-### 3. Update Script Name
+### 3) Проверьте конфигурацию метрик
 
-Change the `script_name` parameter to match your Gatling test script:
+Файл `gatling_metrics_urls.yml` содержит преднастроенные панели:
+`panel_3`, `panel_9`, `panel_1`, `panel_6`, `panel_7`, `panel_4`.
 
-```yaml
-script_name: "Your_Test_Script_Name"  # Replace with your actual script name
-```
+В `vars` используется значение `PLACEHOLDER` — оно автоматически заменяется на имя скрипта из `gatling_scripts`.
 
-### 4. Verify Metrics Configuration
-
-The `gatling_metrics_urls.yml` file contains 6 pre-configured panels:
-- panel_3, panel_9, panel_1, panel_6, panel_7, panel_4
-
-These correspond to the panels from your Gatling dashboard.
-
-## Usage
-
-### Run with Gatling Metrics
+## Запуск
 
 ```bash
-# Download Grafana metrics (includes Gatling metrics if enabled)
-python3 src/main.py -grafana
-
-# Download both Gatling reports and all metrics
-python3 src/main.py -gatling -grafana
+python3 src/main.py -grafana          # Загрузит и обычные метрики, и Gatling (если включено)
+python3 src/main.py -gatling -grafana # Плюс скачает SSH-отчёт Gatling
 ```
 
-### Verify Output
+## Где искать результат
 
-Check that the metrics are downloaded to:
 ```
 reports/
 └── metrics/
     └── gatling_metrics/
-        ├── panel_3.png
-        ├── panel_9.png
-        ├── panel_1.png
-        ├── panel_6.png
-        ├── panel_7.png
-        └── panel_4.png
+        └── <имя-скрипта>/
+            ├── panel_3.png
+            ├── panel_9.png
+            └── ...
 ```
 
-## Customization
+## Кастомизация
 
-### Adding More Gatling Panels
+### Добавить новые панели
 
-To add more panels from your Gatling dashboard:
-
-1. **Find the panel ID** from the Grafana URL (e.g., `&viewPanel=panel-5`)
-2. **Add to `gatling_metrics_urls.yml`:**
-
+1) Найдите `panelId` в URL Grafana (`viewPanel=`) и `dashboard_uid`
+2) Добавьте запись в `gatling_metrics_urls.yml`:
 ```yaml
-- name: "panel_5"                      # New panel
+- name: "panel_5"
   dashboard_uid: "de9jk1ju5vmdcb"
   dashboard_name: "gatling-metrics"
   orgId: 1
-  panelId: 5                           # Panel ID from URL
+  panelId: 5
   width: 1000
   height: 500
   vars:
     var-DS_PROMETHEUS: "PBFA97CFB590B2093"
     var-group: "$__all"
     var-node_name: "$__all"
-    var-script_name: "PLACEHOLDER"     # Will be replaced with script_name
-    refresh: "5s"
+    var-script_name: "PLACEHOLDER"   # Будет заменён на имя Gatling-скрипта
     timeout: 60
 ```
 
-### Changing the Script Name Dynamically
+### Динамически менять список скриптов
 
-You can modify the script name for different test runs:
+Включайте/выключайте элементы в `gatling_grafana.gatling_scripts`.
 
-```yaml
-# In config.yml
-gatling_grafana:
-  script_name: "Performance_Test_v2"  # Update for different tests
-```
+## Частые проблемы
 
-## Troubleshooting
+1) Ничего не скачивается
+- Проверьте `services.gatling_metrics_service: true`
+- Проверьте доступность `GATLING_GRAFANA_BASE_URL`
+- Проверьте токен `GATLING_GRAFANA_API_KEY`
 
-### Common Issues
+2) Не те данные по скрипту
+- Убедитесь, что имя скрипта в `gatling_scripts` совпадает с тем, что используется на дашборде
 
-1. **No Gatling metrics downloaded**
-   - Check that `gatling_metrics_service: true` in config.yml
-   - Verify the secondary Grafana URL is accessible
-   - Ensure the API key has proper permissions
+3) Ошибка панели
+- Проверьте `panelId` и `dashboard_uid` в `gatling_metrics_urls.yml`
 
-2. **Wrong script name in metrics**
-   - Update `script_name` in the `gatling_grafana` section
-   - The script name should match exactly what appears in your Grafana dashboard
-
-3. **Panel not found errors**
-   - Verify panel IDs in `gatling_metrics_urls.yml`
-   - Check that the dashboard UID is correct (`de9jk1ju5vmdcb`)
-
-### Debugging
-
-Enable debug logging to see detailed information:
+## Отладка
 
 ```bash
-# Check the logs for detailed error information
 tail -f app.log
 ```
+В логах ищите блоки со словом "Gatling" — там виден прогресс и возможные ошибки.
 
-Look for lines containing "Gatling" to see the download progress and any issues.
+## Технические детали
 
-## Technical Details
+- UID дашборда: `de9jk1ju5vmdcb`
+- Название: `gatling-metrics`
+- Подстановка переменных: `PLACEHOLDER` → имя скрипта
+- Временной диапазон: общий из `mainConfig` → конвертация в UTC
+- Формат: PNG (напр., 1000x500)
 
-- **Dashboard UID**: `de9jk1ju5vmdcb`
-- **Dashboard Name**: `gatling-metrics`
-- **Variable Replacement**: `PLACEHOLDER` → `script_name` from config
-- **Time Range**: Uses the same time range as other metrics from `mainConfig`
-- **Output Format**: PNG images (1000x500 pixels)
+## Интеграция с общим процессом
 
-## Integration with Existing Workflow
-
-The Gatling metrics download is integrated into the existing `-grafana` flag, so:
-- When you run `-grafana`, both regular service metrics AND Gatling metrics are downloaded
-- Gatling metrics are stored in a separate `gatling_metrics` folder
-- All use the same time range configuration
-- All logging goes to the same `app.log` file
+- Флаг `-grafana` запускает загрузку обычных метрик сервисов, Gatling‑метрик и PostgreSQL‑метрик (если соответствующие сервисы включены)
+- Всё логируется в `app.log`

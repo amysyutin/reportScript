@@ -1,65 +1,65 @@
-# Quick Start Guide
+# Краткий старт
 
-## TL;DR - How to use the script
+## TL;DR — как запустить
 
-### 1. Install dependencies
+### 1) Установите зависимости
 ```bash
+python3 -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-### 2. Configure your settings
-Edit `config.yml`:
-- Set your time range (`mainConfig.from` and `mainConfig.to`)
-- Enable/disable services in the `services` section
-- Configure SSH and Grafana credentials
+### 2) Настройте конфиг
+Отредактируйте `config.yml`:
+- Укажите временной диапазон (`mainConfig.from` / `mainConfig.to`)
+- Включите нужные сервисы в `services`
+- Заполните доступы SSH и Grafana
 
-### 3. Run the script
+Опционально создайте `.env` — значения `${VAR}` из `config.yml` подставятся автоматически.
+
+### 3) Запустите скрипт
 ```bash
-# From src/ directory
+# Из каталога src/
 cd src
-python3 main.py -grafana          # Download Grafana metrics only
-python3 main.py -gatling          # Download Gatling reports only  
-python3 main.py -gatling -grafana # Download both
+python3 main.py -grafana          # Только метрики Grafana
+python3 main.py -gatling          # Только отчёты Gatling
+python3 main.py -gatling -grafana # Всё вместе
 
-# Or from project root
+# Или из корня проекта
 python3 src/main.py -grafana
 ```
 
-### 4. Check results
-- Gatling reports: `./reports/gatling/`
-- Grafana metrics: `./reports/metrics/{service-name}/`
-- Logs: `app.log`
+### 4) Проверьте результаты
+- Gatling: `./reports/gatling/`
+- Метрики Grafana: `./reports/metrics/<service>/`
+- Логи: `app.log`
 
-## Key Configuration Files
+## Важные файлы
 
-- **`config.yml`** - Main configuration (time, services, credentials)
-- **`metrics_urls.yml`** - Grafana metrics definitions (usually no changes needed)
+- `config.yml` — основной конфиг (время, сервисы, доступы)
+- `metrics_urls.yml` — описание метрик Grafana
 
-## Alternative Methods
+## Альтернативы
 
-### Using example_usage.py for configuration
+### Примеры настройки конфигурации
 ```bash
-# Automatically update time range and configure services
 python3 example_usage.py
 ```
 
-### Using shell wrapper
+### Shell-обёртка
 ```bash
-# Simple shell interface
-./get_screenshots.sh download     # Download all
-./get_screenshots.sh test         # Test connection
-./get_screenshots.sh list         # List metrics
+./get_screenshots.sh download     # Скачать всё
+./get_screenshots.sh test         # Проверить подключение
+./get_screenshots.sh list         # Показать список метрик
 ```
 
-### Enhanced Grafana features
+### Расширенные возможности Grafana
 ```bash
-# Advanced Grafana automation
 python3 grafana_enhanced.py --test-connection
 python3 grafana_enhanced.py --download-all
 ```
 
-## Need Help?
+## Помощь
 
-- Check the full [README.md](README.md) for detailed documentation
-- View logs in `app.log` for troubleshooting
-- Run `python3 src/main.py --help` for command options
+- Полное руководство — см. [README.md](README.md)
+- Логи — `app.log`
+- Справка по CLI — `python3 src/main.py --help`
