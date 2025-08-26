@@ -1,161 +1,330 @@
-# Grafana Screenshot Automation 📊
+# Grafana and Gatling Report Automation
 
-## Status: ✅ WORKING PERFECTLY!
+## Overview
 
-Your Grafana API automation is **fully functional**! No more manual screenshots needed.
+This project automates the downloading of Gatling performance test reports and Grafana metrics. It uses a flexible, configuration-based approach to support multiple services and metrics.
 
-## 🎯 What's Working
+## Features
 
-✅ **Grafana API Integration** - Successfully downloading screenshots via API  
-✅ **Authentication** - Bearer token authentication working  
-✅ **Multiple Dashboards** - Supporting both "spring-boot-2x" and "kuber-analitics"  
-✅ **5 Metrics Automated** - All your performance metrics captured automatically  
-✅ **Time Range Handling** - Proper timezone conversion (Europe/Moscow)  
-✅ **File Organization** - Clean folder structure with timestamps  
-✅ **Error Handling** - Robust retry logic and validation
+- 🚀 **Automatic Gatling Report Download:** SSH-based downloading of latest performance test reports
+- 📊 **Grafana Metrics Collection:** API-based downloading of performance metrics as images
+- ⚙️ **Flexible Configuration:** YAML-based configuration for easy customization
+- 🔧 **Service Management:** Enable/disable services individually
+- 📝 **Comprehensive Logging:** Detailed logging with multiple levels
+- 🕐 **Timezone Support:** Automatic timezone conversion for time ranges
+- 📁 **Organized Output:** Structured folder organization for reports and metrics
 
-## Структура проекта
+## Project Structure
+
 ```
 reportsScript/
-├── config.yml              # Основной конфиг в YAML
-├── metrics_urls.yml       # Конфиг метрик Grafana
-├── requirements.txt       # Зависимости проекта
-└── src/                  # Исходный код
-    ├── config.py         # Работа с конфигурацией
-    ├── ssh_service.py    # Работа с SSH
-    ├── grafana_service.py # Работа с Grafana
-    ├── utils.py          # Вспомогательные функции
-    └── main.py           # Точка входа
+├── config.yml              # Main configuration file
+├── metrics_urls.yml        # Grafana metrics configuration
+├── requirements.txt        # Python dependencies
+├── example_usage.py        # Configuration management demo
+├── grafana_enhanced.py     # Enhanced Grafana features
+├── get_screenshots.sh      # Shell wrapper script
+├── config_manager.py       # Configuration management utilities
+├── grafana_report.py       # Alternative Grafana report handler
+├── test_url.py            # URL generation testing
+├── src/
+│   ├── main.py             # Entry point
+│   ├── config.py           # Configuration loader
+│   ├── config_loader.py    # Metrics configuration loader
+│   ├── ssh_service.py      # SSH service for Gatling reports
+│   ├── grafana_service.py  # Grafana API service
+│   └── utils.py            # Utility functions
+└── tests/                  # Unit tests
+    ├── test_config_loader.py
+    ├── test_grafana_service.py
+    └── test_utils.py
 ```
 
-## Конфигурация
+## Installation
 
-### config.yml
+1. **Install Python dependencies:**
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+2. **Configure the script:**
+   - Edit `config.yml` with your settings
+   - Modify `metrics_urls.yml` if needed
+
+## Configuration
+
+### Main Configuration (`config.yml`)
+
 ```yaml
-ssh:
-  hostname: "172.19.93.113"
+mainConfig:
+  scenario: "Upload_file"                    # Test scenario name
+  type_of_script: "Maxperf"                  # Script type
+  from: "2025-07-31 13:03:44.562"           # Start time
+  to: "2025-07-31 15:16:09.381"             # End time
+  timezone: "Europe/Moscow"                  # Timezone for time conversion
+
+main_folder: "/path/to/reports"              # Base folder for all reports
+
+services:
+  # System services
+  ssh_service: true                          # Enable SSH service
+  grafana_service: true                      # Enable Grafana service
+  gatling_metrics_service: true              # Enable Gatling metrics from secondary Grafana
+  
+  # Application services (enable only what you need)
+  dh-registry-service: true
+  dh-documents-service: true
+  dh-files-service: true
+  dh-auth-service: false
+  # ... add more services as needed
+
+ssh_config:
+  host: "172.19.93.113"
   username: "tester"
-  port: 22
-  remote_report_dir: "/home/tester/Gatling/dh-nt-gatling/target/gatling"
+  password: "123456"
+  remote_path: "/home/tester/Gatling/dh-nt-gatling/target/gatling"
+  local_path: "./reports/gatling"
 
 grafana:
-  api_key: "glc_eyJvIjoiYWRtaW4iLCJuIjoiYWRtaW4iLCJpZCI6MSwiYXV0aCI6ImFkbWluIn0="
-  base_url: "http://172.19.93.113:3000"
+  local_path: "./reports/metrics"
+  metrics_config: "metrics_urls.yml"
+  api_key: "Bearer your_api_key_here"
   timezone: "Europe/Moscow"
+  base_url: "https://grafana.your-domain.com"
 
-local:
-  base_dir: "/Users/alex/PerformanceTesting/LANIT/gatlingScriptResults"
-  report_dir: "/Users/alex/PerformanceTesting/LANIT/gatlingScript/reportsScript"
+# Secondary Grafana configuration for Gatling metrics
+gatling_grafana:
+  local_path: "./reports/metrics/gatling_metrics"
+  base_url: "http://172.19.93.116:3000"
+  api_key: "Bearer your_api_key_here"
+  timezone: "Europe/Moscow"
+  script_name: "Attribute_Search_2"           # Script name for Gatling tests
+  gatling_metrics_config: "gatling_metrics_urls.yml"
 ```
 
-### metrics_urls.yml
-```yaml
-metrics:
-  - name: "k8s_panel_5"
-    url: "/render/d-solo/..."
-  - name: "k8s_panel_7"
-    url: "/render/d-solo/..."
-  # ... другие метрики
-```
+### Metrics Configuration (`metrics_urls.yml`)
 
-## Логика работы
+Defines all available metrics that can be downloaded from Grafana. Each metric includes:
+- Dashboard information (UID, name, panel ID)
+- Image dimensions
+- Variables (with PLACEHOLDER for automatic service name substitution)
 
-### 1. Скачивание отчета Gatling
-1. Подключение к серверу по SSH
-2. Получение имени последнего отчета из файла `lastRun.txt`
-3. Скачивание отчета в локальную директорию
-4. Переименование отчета в формате `Gatling_Report_{test_name}_{date}_{time}`
-5. Удаление отчета на сервере после успешного скачивания
+## Usage
 
-### 2. Скачивание метрик Grafana
-1. Получение списка метрик из `metrics_urls.yml`
-2. Формирование URL для каждой метрики с учетом:
-   - Временного диапазона
-   - Часового пояса
-   - API ключа
-3. Скачивание каждой метрики в формате PNG
-4. Сохранение в директорию с отчетами
+### Basic Commands
 
-## 🚀 Quick Start
-
-### 1. Original Working Method
 ```bash
-# Download all screenshots (your current working method)
+# Run from the src/ directory
+cd src
+
+# Download both Gatling reports and Grafana metrics
+python3 main.py -gatling -grafana
+
+# Download only Grafana metrics
+python3 main.py -grafana
+
+# Download only Gatling reports
+python3 main.py -gatling
+
+# Show help
+python3 main.py --help
+```
+
+### Alternative: Run from project root
+
+```bash
+# Run from project root directory
 python3 src/main.py -grafana
 ```
 
-### 2. Enhanced Automation (NEW!)
+## Available Metrics
 
-#### Simple wrapper script:
-```bash
-# Download all screenshots (default)
-./get_screenshots.sh
+The script supports downloading various performance metrics:
 
-# Test connection
-./get_screenshots.sh test
+### Spring Boot Metrics
+- **cpu_usage** - Application CPU usage
+- **load_average** - System load average
+- **threads** - Thread count
+- **classes_loaded/unloaded** - Class loading statistics
 
-# List available metrics
-./get_screenshots.sh list
+### Memory Metrics
+- **eden_space** - G1 Eden Space (heap)
+- **old_gen** - G1 Old Generation (heap)
+- **survivor_space** - G1 Survivor Space (heap)
+- **metaspace** - Metaspace (non-heap)
+- **compressed_class_space** - Compressed class space
+- **memory_allocate_promote** - Memory allocation/promotion
 
-# Test single metric
-./get_screenshots.sh single cpu_usage
+### Garbage Collection
+- **gc_count** - GC cycle count
+- **gc_stop_the_world_duration** - Stop-the-world GC duration
+
+### HTTP Metrics
+- **http_codes** - HTTP response code distribution
+- **requests_per_second** - Request rate
+- **requests_duration** - Request duration
+
+### Kubernetes Metrics
+- **cpu_by_pod** - CPU usage by pod
+- **memory_usage_by_pods** - Memory usage by pod
+
+### Gatling Metrics (from Secondary Grafana)
+- **panel_3** - Gatling dashboard panel 3
+- **panel_9** - Gatling dashboard panel 9
+- **panel_1** - Gatling dashboard panel 1
+- **panel_6** - Gatling dashboard panel 6
+- **panel_7** - Gatling dashboard panel 7
+- **panel_4** - Gatling dashboard panel 4
+
+## Output Structure
+
+The script creates an organized folder structure based on your configuration:
+
+```
+reports/
+├── gatling/
+│   └── [gatling-report-folder]/
+└── metrics/
+    ├── gatling_metrics/              # Gatling dashboard metrics
+    │   ├── panel_3.png
+    │   ├── panel_9.png
+    │   ├── panel_1.png
+    │   ├── panel_6.png
+    │   ├── panel_7.png
+    │   └── panel_4.png
+    ├── dh-documents-service/
+    │   ├── cpu_usage.png
+    │   ├── memory_usage.png
+    │   └── ...
+    ├── dh-files-service/
+    │   ├── cpu_usage.png
+    │   └── ...
+    └── ...
 ```
 
-#### Advanced Python script:
+## Adding New Services
+
+1. **Add service to `config.yml`:**
+   ```yaml
+   services:
+     # ... existing services ...
+     my-new-service: true
+   ```
+
+2. **Run the script** - metrics will be automatically downloaded for the new service
+
+## Adding New Metrics
+
+1. **Find the Grafana panel information:**
+   - Dashboard UID
+   - Panel ID
+   - Required variables
+
+2. **Add to `metrics_urls.yml`:**
+   ```yaml
+   - name: "my_new_metric"
+     dashboard_uid: "dashboard-uid"
+     dashboard_name: "dashboard-name"
+     orgId: 1
+     panelId: 123
+     width: 1000
+     height: 500
+     vars:
+       var-application: "PLACEHOLDER"  # Will be replaced with service name
+       # ... other variables ...
+   ```
+
+## Auxiliary Scripts
+
+### example_usage.py
+This script demonstrates:
+- How to update the time range in the configuration
+- How to manage and activate application services
+- Lists available metrics
+
+To run the example:
 ```bash
-# Test Grafana API connection
+python3 example_usage.py
+```
+
+### grafana_enhanced.py
+Provides additional Grafana automation features:
+- Validate Grafana API connection
+- Test individual metrics
+- Batch download with progress tracking
+
+To run the enhanced script:
+```bash
 python3 grafana_enhanced.py --test-connection
-
-# Download all with progress tracking
-python3 grafana_enhanced.py --download-all
-
-# Test individual metric
-python3 grafana_enhanced.py --test-metric cpu_usage
-
-# List all metrics
-python3 grafana_enhanced.py --list-metrics
 ```
 
-### 3. Installation
+### get_screenshots.sh
+A shell script wrapper for managing Grafana screenshots.
+
+Usage:
 ```bash
-pip install -r requirements.txt
+./get_screenshots.sh download   # Download all screenshots
+./get_screenshots.sh test       # Test Grafana API connection
+./get_screenshots.sh list       # List all available metrics
+./get_screenshots.sh single cpu_usage   # Test single metric
 ```
 
-## 📋 Available Metrics
+### Additional Utilities
 
-Your automation currently captures:
-1. **cpu_usage** - Spring Boot 2x dashboard
-2. **load_average** - Spring Boot 2x dashboard
-3. **cpu_by_pod** - Kuber Analytics dashboard
-4. **memory_usage_pod** - Kuber Analytics dashboard
-5. **throttling** - Kuber Analytics dashboard
+- **config_manager.py** - Configuration management utilities for loading and formatting YAML configurations
+- **grafana_report.py** - Alternative Grafana report handler with simplified interface
+- **test_url.py** - URL generation testing script for debugging Grafana API calls
 
-## Логирование
-- Все операции логируются в консоль
-- Уровни логирования:
-  - INFO - основные операции
-  - WARNING - предупреждения
-  - ERROR - ошибки
-  - CRITICAL - критические ошибки
+## Logging
 
-## Обработка ошибок
-- Проверка наличия конфигурационных файлов
-- Проверка SSH-подключения
-- Проверка успешности скачивания файлов
-- Проверка успешности удаления на сервере
-- Обработка ошибок сети и API Grafana
+- **File logging:** All operations are logged to `app.log`
+- **Console logging:** Important messages displayed in terminal
+- **Log levels:** INFO, WARNING, ERROR for different types of messages
 
-## Результаты
-1. Отчет Gatling:
-   - Сохраняется в директорию `local.base_dir`
-   - Имя файла: `Gatling_Report_{test_name}_{date}_{time}`
+## Troubleshooting
 
-2. Метрики Grafana:
-   - Сохраняются в директорию `local.report_dir`
-   - Имена файлов: `{metric_name}.png`
+### Common Issues
 
-## Требования
-- Python 3.6+
-- Доступ к серверу по SSH
-- API ключ Grafana
-- Достаточно места на диске для сохранения отчетов 
+1. **"File not found: config.yml"**
+   - Ensure you're running from the correct directory
+   - Check that config.yml exists
+
+2. **SSH connection failed**
+   - Verify SSH credentials in config.yml
+   - Check network connectivity to SSH host
+
+3. **Grafana API errors**
+   - Verify API key is correct and has proper permissions
+   - Check Grafana base URL
+   - Ensure dashboard UIDs and panel IDs are correct
+
+4. **No metrics downloaded**
+   - Check that services are enabled in config.yml
+   - Verify time range is valid
+   - Check Grafana service is enabled
+
+### Getting Help
+
+```bash
+# Check script help
+python3 src/main.py --help
+
+# View logs for detailed error information
+tail -f app.log
+```
+
+## Requirements
+
+- Python 3.6 or higher
+- Network access to SSH server (for Gatling reports)
+- Network access to Grafana instance
+- Valid Grafana API key
+- Sufficient disk space for downloaded reports
+
+## Dependencies
+
+See `requirements.txt` for the complete list:
+- `paramiko` - SSH client
+- `requests` - HTTP client
+- `PyYAML` - YAML configuration parser
+- `python-dateutil` - Date/time utilities

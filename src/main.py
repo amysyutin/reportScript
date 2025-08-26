@@ -3,7 +3,7 @@ import os
 from config import load_config
 from config_loader import load_metrics_config
 from ssh_service import ssh_download_last_report
-from grafana_service import download_grafana_metrics
+from grafana_service import download_grafana_metrics, download_postgresql_metrics, download_gatling_metrics
 from utils import create_main_folder, logger
 
 def main():
@@ -39,7 +39,7 @@ def main():
         ssh_enabled = service_flags.get('ssh_service', True)
         
         # Собираем только включенные сервисы приложений (исключая системные)
-        system_services = {'grafana_service', 'ssh_service'}
+        system_services = {'grafana_service', 'ssh_service', 'gatling_metrics_service', 'postgresql_metrics_service'}
         metric_services = [
             name for name, enabled in service_flags.items() 
             if enabled and name not in system_services
@@ -55,6 +55,17 @@ def main():
                 logger.info(f"Отчет Gatling успешно скачан: {report_path}")
             else:
                 logger.error("Не удалось скачать отчет Gatling")
+
+        # Скачивание GATLING метрик независимо от grafana_service
+        # Если передан флаг -grafana и включён gatling_metrics_service, но grafana_service отключён,
+        # запускаем скачивание Gatling метрик отдельно, чтобы не зависеть от основного сервиса метрик.
+        if args.grafana and cfg.get('services', {}).get('gatling_metrics_service', False) and not grafana_enabled:
+            logger.info("Начинаем независимое скачивание Gatling метрик (grafana_service: false)...")
+            try:
+                download_gatling_metrics(cfg, main_folder_path)
+                logger.info("Gatling метрики успешно скачаны")
+            except Exception as e:
+                logger.error(f"Ошибка при скачивании Gatling метрик: {str(e)}")
 
         # Скачивание метрик Grafana, если указан соответствующий флаг
         if args.grafana and grafana_enabled:

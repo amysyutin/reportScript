@@ -1,0 +1,94 @@
+# Конфигурация метрик для скачивания из Gatling дашборда
+# Каждая метрика содержит информацию о панели dashboard'а и параметрах запроса
+metrics:
+  # ========== GATLING МЕТРИКИ ==========
+  
+  - name: "panel_3"                      # Метрика с панели 3
+    dashboard_uid: "de9jk1ju5vmdcb"      # UID dashboard'а в Grafana
+    dashboard_name: "gatling-metrics"     # Название dashboard'а
+    orgId: 1                             # ID организации в Grafana
+    panelId: 3                           # ID панели
+    width: 1000                          # Ширина изображения в пикселях
+    height: 500                          # Высота изображения в пикселях
+    vars:                                # Переменные для запроса
+      var-DS_PROMETHEUS: "PBFA97CFB590B2093"     # ID источника данных Prometheus
+      var-group: "$__all"                        # Все группы
+      var-node_name: "$__all"                    # Все ноды
+      var-script_name: "PLACEHOLDER"             # Будет заменено на script_name из конфига
+      refresh: "5s"                              # Интервал обновления
+      timeout: 60                                # Таймаут запроса в секундах
+
+  - name: "panel_9"                      # Метрика с панели 9
+    dashboard_uid: "de9jk1ju5vmdcb"
+    dashboard_name: "gatling-metrics"
+    orgId: 1
+    panelId: 9
+    width: 1000
+    height: 500
+    vars:
+      var-DS_PROMETHEUS: "PBFA97CFB590B2093"
+      var-group: "$__all"
+      var-node_name: "$__all"
+      var-script_name: "PLACEHOLDER"
+      refresh: "5s"
+      timeout: 60
+
+  - name: "panel_1"                      # Метрика с панели 1
+    dashboard_uid: "de9jk1ju5vmdcb"
+    dashboard_name: "gatling-metrics"
+    orgId: 1
+    panelId: 1
+    width: 1000
+    height: 500
+    vars:
+      var-DS_PROMETHEUS: "PBFA97CFB590B2093"
+      var-group: "$__all"
+      var-node_name: "$__all"
+      var-script_name: "PLACEHOLDER"
+      refresh: "5s"
+      timeout: 60
+
+  - name: "panel_6"                      # Метрика с панели 6
+    dashboard_uid: "de9jk1ju5vmdcb"
+    dashboard_name: "gatling-metrics"
+    orgId: 1
+    panelId: 6
+    width: 1000
+    height: 500
+    vars:
+      var-DS_PROMETHEUS: "PBFA97CFB590B2093"
+      var-group: "$__all"
+      var-node_name: "$__all"
+      var-script_name: "PLACEHOLDER"
+      refresh: "5s"
+      timeout: 60
+
+  - name: "panel_7"                      # Метрика с панели 7
+    dashboard_uid: "de9jk1ju5vmdcb"
+    dashboard_name: "gatling-metrics"
+    orgId: 1
+    panelId: 7
+    width: 1000
+    height: 500
+    vars:
+      var-DS_PROMETHEUS: "PBFA97CFB590B2093"
+      var-group: "$__all"
+      var-node_name: "$__all"
+      var-script_name: "PLACEHOLDER"
+      refresh: "5s"
+      timeout: 60
+
+  - name: "panel_4"                      # Метрика с панели 4
+    dashboard_uid: "de9jk1ju5vmdcb"
+    dashboard_name: "gatling-metrics"
+    orgId: 1
+    panelId: 4
+    width: 1000
+    height: 500
+    vars:
+      var-DS_PROMETHEUS: "PBFA97CFB590B2093"
+      var-group: "$__all"
+      var-node_name: "$__all"
+      var-script_name: "PLACEHOLDER"
+      refresh: "5s"
+      timeout: 60

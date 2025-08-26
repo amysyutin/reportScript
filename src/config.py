@@ -1,11 +1,48 @@
 import yaml
 import os
+import re
+from pathlib import Path
 from utils import logger, ensure_file_exists
+
+# Опционально подгружаем .env, если установлен python-dotenv
+try:
+    from dotenv import load_dotenv
+    # 1) Пытаемся загрузить .env из текущей директории
+    load_dotenv()
+    # 2) Явно пробуем .env из корня проекта (относительно src/)
+    project_root_env = Path(__file__).resolve().parent.parent / '.env'
+    if project_root_env.exists():
+        load_dotenv(dotenv_path=project_root_env, override=False)
+except Exception:
+    # Библиотека может быть не установлена; это не критично
+    pass
+
+_ENV_PATTERN = re.compile(r"^\$\{([A-Z0-9_]+)\}$")
+
+
+def _resolve_env_placeholders(obj):
+    """Рекурсивно заменяет строки вида ${ENV_VAR} на значения из окружения.
+
+    Если переменная окружения не задана, оставляет исходное значение.
+    """
+    if isinstance(obj, dict):
+        return {k: _resolve_env_placeholders(v) for k, v in obj.items()}
+    if isinstance(obj, list):
+        return [_resolve_env_placeholders(v) for v in obj]
+    if isinstance(obj, str):
+        m = _ENV_PATTERN.match(obj)
+        if m:
+            env_name = m.group(1)
+            return os.getenv(env_name, obj)
+        return obj
+    return obj
+
 
 def load_config(config_path='config.yml'):
     """
-    Загружает основной конфиг из YAML файла.
-    
+    Загружает основной конфиг из YAML файла и подставляет значения из ENV
+    для плейсхолдеров вида ${VARNAME}.
+
     Args:
         config_path (str): Путь к файлу конфигурации
         
@@ -22,12 +59,14 @@ def load_config(config_path='config.yml'):
         
         ensure_file_exists(config_path)
         with open(config_path, 'r', encoding='utf-8') as f:
-            config = yaml.safe_load(f)
+            raw_config = yaml.safe_load(f)
+        config = _resolve_env_placeholders(raw_config)
         logger.info(f"Загружен конфиг из {config_path}")
         return config
     except Exception as e:
         logger.error(f"Ошибка при загрузке конфига: {str(e)}")
         raise
+
 
 def load_metrics_config(metrics_path='metrics_urls.yml'):
     """
@@ -55,6 +94,7 @@ def load_metrics_config(metrics_path='metrics_urls.yml'):
     except Exception as e:
         logger.error(f"Ошибка при загрузке конфига метрик: {str(e)}")
         raise
+
 
 class Config:
     def __init__(self, config_path='config.yml', services=None):

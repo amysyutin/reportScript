@@ -36,7 +36,19 @@ ENV/
 *.log
 config.json
 metric_urls.txt
+.env
+config.local.yml
 
 # OS specific
 .DS_Store
 Thumbs.db 
+# secrets
+.env
+*.pem
+id_rsa*
+*.key
+
+# outputs
+/reports
+__pycache__/
+.pytest_cache/

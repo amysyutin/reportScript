@@ -3,7 +3,7 @@ from dataclasses import dataclass, field
 from typing import Any, Dict, List
 import yaml
 
-from src.utils import ensure_file_exists
+from utils import ensure_file_exists
 
 logger = logging.getLogger(__name__)
 

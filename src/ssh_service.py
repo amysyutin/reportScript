@@ -3,6 +3,7 @@ import os
 import shutil
 import logging
 import subprocess
+from pathlib import Path
 
 def ssh_download_last_report(cfg, main_folder_path):
     """
@@ -22,13 +23,45 @@ def ssh_download_last_report(cfg, main_folder_path):
         os.makedirs(local_path, exist_ok=True)
         logging.info(f"Создана базовая директория: {local_path}")
         
-        # Устанавливаем SSH-соединение
+        # Устанавливаем SSH-соединение (ключ или пароль, порт по умолчанию 22)
         ssh = paramiko.SSHClient()
         ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+
+        host = cfg['ssh_config'].get('host')
+        username = cfg['ssh_config'].get('username')
+        password = cfg['ssh_config'].get('password')
+
+        # Валидация обязательных полей
+        if not host or str(host).strip() in {"", "${SSH_HOST}"}:
+            logging.error("SSH_HOST не задан. Укажите SSH_HOST в .env или config.yml")
+            return None
+        if not username or str(username).strip() in {"", "${SSH_USERNAME}"}:
+            logging.error("SSH_USERNAME не задан. Укажите SSH_USERNAME в .env или config.yml")
+            return None
+        port = int(cfg['ssh_config'].get('port', 22) or 22)
+        key_path_str = cfg['ssh_config'].get('key_path')
+
+        pkey = None
+        if key_path_str:
+            expanded_key_path = os.path.expanduser(str(key_path_str))
+            if os.path.exists(expanded_key_path):
+                try:
+                    pkey = paramiko.RSAKey.from_private_key_file(expanded_key_path)
+                except Exception:
+                    # Попробуем Ed25519/EC ключи
+                    try:
+                        pkey = paramiko.Ed25519Key.from_private_key_file(expanded_key_path)
+                    except Exception:
+                        pkey = None
+
         ssh.connect(
-            hostname=cfg['ssh_config']['host'],
-            username=cfg['ssh_config']['username'],
-            password=cfg['ssh_config']['password']
+            hostname=host,
+            port=port,
+            username=username,
+            pkey=pkey,
+            password=None if pkey else password,
+            look_for_keys=False,
+            allow_agent=False,
         )
         
         # Получаем имя последнего отчета из файла lastRun.txt
@@ -65,7 +98,20 @@ def ssh_download_last_report(cfg, main_folder_path):
             logging.info(f"Удалена существующая директория/файл отчета: {local_report_path}")
             
         # Формируем команду SCP для копирования всей директории
-        scp_command = f'scp -r "{cfg["ssh_config"]["username"]}@{cfg["ssh_config"]["host"]}:{remote_path}" "{local_path}"'
+        scp_parts = [
+            'scp',
+            '-r'
+        ]
+        # Порт
+        if port:
+            scp_parts.extend(['-P', str(port)])
+        # Ключ
+        if key_path_str:
+            scp_parts.extend(['-i', f'"{os.path.expanduser(str(key_path_str))}"'])
+
+        scp_parts.append(f'"{username}@{host}:{remote_path}"')
+        scp_parts.append(f'"{local_path}"')
+        scp_command = ' '.join(scp_parts)
         logging.info(f"Выполняем команду: {scp_command}")
         
         # Выполняем команду через shell

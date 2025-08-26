@@ -1,25 +1,74 @@
 mainConfig:
-  scenario: "create_doc"
-  type_of_script: "ASTRA"
-  from: "2025-07-21 13:15:53"
-  to: "2025-07-21 14:51:20"
-  timezone: "Europe/Moscow"
+  scenario: "TEST"
+  type_of_script: "TEST"
+  from: "2025-08-23 08:07:48.562"
+  to: "2025-08-25 15:30:53.381"
+  timezone: "${TIMEZONE}"
 
-main_folder: "/Users/alex/PerformanceTesting/LANIT/gatlingScript"
+main_folder: "${REPORTS_BASE_DIR}"
+# Конфигурация сервисов скрипта
 services:
-  ssh_service: true
-  grafana_service: true
+  # Системные сервисы (НЕ сервисы приложений)
+  ssh_service: true          # Скачивание отчетов Gatling по SSH
+  grafana_service: true      # Скачивание метрик из Grafana
+  gatling_metrics_service: true   # Скачивание метрик Gatling из дашборда
+  postgresql_metrics_service: true # Скачивание метрик PostgreSQL из дашборда
+  
+  # Сервисы приложений (для которых будут скачиваться метрики)
+  # Установите true для тех сервисов, для которых нужно скачать метрики
+  dh-registry-service: true     # Сервис регистрации
+  dh-documents-service: true    # Сервис работы с документами
+  dh-files-service: true        # Сервис работы с файлами
+  dh-auth-service: true        # Сервис аутентификации (отключен)
+  dh-notifications-service: true  # Сервис уведомлений (отключен)
+  dh-federal-search-service: true  # Сервис федерального поиска
+  ldm-index-content-controller-service: true
 
 ssh_config:
-  host: "172.19.93.113"
-  username: "tester"
-  password: "123456"
-  remote_path: "/home/tester/Gatling/dh-nt-gatling/target/gatling"
-  local_path: "./reports/gatling"
+  host: "${SSH_HOST}"
+  username: "${SSH_USERNAME}"
+  password: "${SSH_PASSWORD}"
+  remote_path: "${SSH_REMOTE_PATH}"
+  local_path: "${SSH_LOCAL_PATH}"
 
 grafana:
-  local_path: "./reports/metrics"
+  local_path: "${GRAFANA_LOCAL_PATH}"
   metrics_config: "metrics_urls.yml"
-  api_key: "Bearer glsa_svq6QxlK1dOEPy8dn76GYgpf215fdmIf_2e8d9b52"
+  api_key: "${GRAFANA_API_KEY}"
+  timezone: "${TIMEZONE}"
+  base_url: "${GRAFANA_BASE_URL}"
+
+# Конфигурация для Gatling метрик (вторая Grafana)
+gatling_grafana:
+  local_path: "${GATLING_GRAFANA_LOCAL_PATH}"
+  base_url: "${GATLING_GRAFANA_BASE_URL}"
+  api_key: "${GATLING_GRAFANA_API_KEY}"  # Отдельный токен для Gatling Grafana
   timezone: "Europe/Moscow"
-  base_url: "https://grafana.stress-astra.lan.lanit.ru"
+  gatling_metrics_config: "gatling_metrics_urls.yml"
+  
+  # Gatling скрипты (включить/выключить каждый отдельно)
+  gatling_scripts:
+    Get_Code_Atributes: true
+    Upload_File: true            # Скрипт загрузки файлов
+    Create_Document: true
+    Federal_Search: true      # Скрипт создания документов
+    Attribute_Search_1: true   # Поиск атрибутов v1
+    Attribute_Search_2: true    # Поиск атрибутов v2
+    Attribute_Search_3: true
+    Attribute_Search_4: true
+
+# Конфигурация для PostgreSQL метрик (основная Grafana)
+postgresql_grafana:
+  local_path: "${POSTGRESQL_GRAFANA_LOCAL_PATH}"
+  base_url: "${POSTGRESQL_GRAFANA_BASE_URL}"  # Тот же URL что и основная Grafana
+  api_key: "${POSTGRESQL_GRAFANA_API_KEY}"  # Тот же токен что и основная Grafana
+  timezone: "Europe/Moscow"
+  metrics_config: "metrics_urls.yml"  # Используем общий файл метрик
+  
+  # PostgreSQL настройки (переменные для дашборда)
+  postgresql_variables:
+    var-DS_PROMETHEUS: "${PG_VAR_DS_PROMETHEUS}"
+    var-node: "${PG_VAR_NODE}"
+    var-datname: "${PG_VAR_DATNAME}"
+
+

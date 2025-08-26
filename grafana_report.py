@@ -8,7 +8,10 @@ class GrafanaReport:
     def __init__(self, config_manager):
         self.config_manager = config_manager
         self.grafana_config = config_manager.get_grafana_config()
-        self.api_key = self.grafana_config.get('api_key')
+        api_key = str(self.grafana_config.get('api_key', ''))
+        if api_key and not api_key.lower().startswith('bearer '):
+            api_key = f"Bearer {api_key}"
+        self.api_key = api_key
         self.metrics_config_path = config_manager.get_metrics_config_path()
         self.metrics_config = self._load_metrics_config()
         self.timezone = config_manager.get_main_config().get('timezone', 'UTC')

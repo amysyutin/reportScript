@@ -1,85 +1,317 @@
+# Конфигурация метрик для скачивания из Grafana
+# Каждая метрика содержит информацию о панели dashboard'а и параметрах запроса
 metrics:
-  - name: "cpu_usage"
+  # ========== SPRING BOOT МЕТРИКИ (Application Performance) ==========
+  
+  - name: "cpu_usage"                    # Использование CPU приложением
+    dashboard_uid: "spring-boot-2x"      # UID dashboard'а в Grafana
+    dashboard_name: "spring-boot-2x"     # Название dashboard'а
+    orgId: 1                             # ID организации в Grafana
+    panelId: 95                          # ID панели для CPU Usage
+    width: 1000                          # Ширина изображения в пикселях
+    height: 500                          # Высота изображения в пикселях
+    vars:                                # Переменные для запроса
+      var-application: "PLACEHOLDER"          # Будет заменено на название сервиса
+      var-instance: "$__all"                  # Все инстансы
+      var-memory_pool_heap: "$__all"          # Все heap пулы памяти
+      var-memory_pool_nonheap: "$__all"       # Все non-heap пулы памяти
+      timeout: 60                         # Таймаут запроса в секундах
+
+  - name: "load_average"                 # Средняя нагрузка на систему
     dashboard_uid: "spring-boot-2x"
     dashboard_name: "spring-boot-2x"
     orgId: 1
-    panelId: 95
+    panelId: 96                          # ID панели для Load Average
     width: 1000
     height: 500
     vars:
-      var-application: "dh-files-service"
-      var-instance: "dh-files-service.astra-stress.svc:8080"
+      var-application: "PLACEHOLDER"
+      var-instance: "$__all"
       var-memory_pool_heap: "$__all"
       var-memory_pool_nonheap: "$__all"
       timeout: 60
 
-  - name: "load_average"
+  # ========== ПАМЯТЬ (Memory Management) ==========
+  
+  - name: "eden_space"                   # G1 Eden Space (heap) - область для новых объектов
     dashboard_uid: "spring-boot-2x"
     dashboard_name: "spring-boot-2x"
     orgId: 1
-    panelId: 96
+    panelId: 85                          # ID панели для Memory Pool
     width: 1000
     height: 500
     vars:
-      var-application: "dh-files-service"
-      var-instance: "dh-files-service.astra-stress.svc:8080"
+      var-application: "PLACEHOLDER"
+      var-instance: "$__all"
+      var-memory_pool_heap: "G1 Eden Space"  # Конкретный пул памяти
+      var-memory_pool_nonheap: "$__all"
+      timeout: 60
+
+  - name: "old_gen"                      # G1 Old Gen (heap) - область для долгоживущих объектов
+    dashboard_uid: "spring-boot-2x"
+    dashboard_name: "spring-boot-2x"
+    orgId: 1
+    panelId: 85
+    width: 1000
+    height: 500
+    vars:
+      var-application: "PLACEHOLDER"
+      var-instance: "$__all"
+      var-memory_pool_heap: "G1 Old Gen"
+      var-memory_pool_nonheap: "$__all"
+      timeout: 60
+
+  - name: "survivor_space"               # G1 Survivor Space (heap) - промежуточная область
+    dashboard_uid: "spring-boot-2x"
+    dashboard_name: "spring-boot-2x"
+    orgId: 1
+    panelId: 85
+    width: 1000
+    height: 500
+    vars:
+      var-application: "PLACEHOLDER"
+      var-instance: "$__all"
+      var-memory_pool_heap: "G1 Survivor Space"
+      var-memory_pool_nonheap: "$__all"
+      timeout: 60
+
+  - name: "metaspace"                    # Metaspace (non-heap) - метаданные классов
+    dashboard_uid: "spring-boot-2x"
+    dashboard_name: "spring-boot-2x"
+    orgId: 1
+    panelId: 88                          # ID панели для Non-Heap Memory
+    width: 1000
+    height: 500
+    vars:
+      var-application: "PLACEHOLDER"
+      var-instance: "$__all"
+      var-memory_pool_heap: "$__all"
+      var-memory_pool_nonheap: "Metaspace"
+      timeout: 60
+
+  - name: "compressed_class_space"       # Compressed Class Space - сжатое пространство классов
+    dashboard_uid: "spring-boot-2x"
+    dashboard_name: "spring-boot-2x"
+    orgId: 1
+    panelId: 88
+    width: 1000
+    height: 500
+    vars:
+      var-application: "PLACEHOLDER"
+      var-instance: "$__all"
+      var-memory_pool_heap: "$__all"
+      var-memory_pool_nonheap: "Compressed Class Space"
+      timeout: 60
+
+  # ========== ПОТОКИ И КЛАССЫ (Threads & Classes) ==========
+  
+  - name: "threads"                      # Количество потоков в приложении
+    dashboard_uid: "spring-boot-2x"
+    dashboard_name: "spring-boot-2x"
+    orgId: 1
+    panelId: 68                          # ID панели для Threads
+    width: 1000
+    height: 500
+    vars:
+      var-application: "PLACEHOLDER"
+      var-instance: "$__all"
       var-memory_pool_heap: "$__all"
       var-memory_pool_nonheap: "$__all"
       timeout: 60
 
-  - name: "cpu_by_pod"
-    dashboard_uid: "q8KMdnmnk"
-    dashboard_name: "kuber-analitics"
+  - name: "memory_allocate_promote"      # Выделение и продвижение памяти
+    dashboard_uid: "spring-boot-2x"
+    dashboard_name: "spring-boot-2x"
     orgId: 1
-    panelId: 199
+    panelId: 78                          # ID панели для Memory Allocate/Promote
     width: 1000
     height: 500
     vars:
-      var-node: "$__all"
+      var-application: "PLACEHOLDER"
+      var-instance: "$__all"
+      var-memory_pool_heap: "$__all"
+      var-memory_pool_nonheap: "$__all"
+      timeout: 60
+
+  - name: "classes_unloaded"             # Количество выгруженных классов
+    dashboard_uid: "spring-boot-2x"
+    dashboard_name: "spring-boot-2x"
+    orgId: 1
+    panelId: 80                          # ID панели для Classes Loaded
+    width: 1000
+    height: 500
+    vars:
+      var-application: "PLACEHOLDER"
+      var-instance: "$__all"
+      var-memory_pool_heap: "$__all"
+      var-memory_pool_nonheap: "$__all"
+      timeout: 60
+
+  - name: "classes_loaded"               # Количество загруженных классов
+    dashboard_uid: "spring-boot-2x"
+    dashboard_name: "spring-boot-2x"
+    orgId: 1
+    panelId: 50                          # ID панели для Classes Unloaded
+    width: 1000
+    height: 500
+    vars:
+      var-application: "PLACEHOLDER"
+      var-instance: "$__all"
+      var-memory_pool_heap: "$__all"
+      var-memory_pool_nonheap: "$__all"
+      timeout: 60
+
+  # ========== GARBAGE COLLECTION ==========
+  
+  - name: "gc_count"                     # Количество циклов сборки мусора
+    dashboard_uid: "spring-boot-2x"
+    dashboard_name: "spring-boot-2x"
+    orgId: 1
+    panelId: 74                          # ID панели для GC Count
+    width: 1000
+    height: 500
+    vars:
+      var-application: "PLACEHOLDER"
+      var-instance: "$__all"
+      var-memory_pool_heap: "$__all"
+      var-memory_pool_nonheap: "$__all"
+      timeout: 60
+
+  - name: "gc_stop_the_world_duration"   # Длительность остановки мира при GC
+    dashboard_uid: "spring-boot-2x"
+    dashboard_name: "spring-boot-2x"
+    orgId: 1
+    panelId: 76                          # ID панели для GC Stop the World Duration
+    width: 1000
+    height: 500
+    vars:
+      var-application: "PLACEHOLDER"
+      var-instance: "$__all"
+      var-memory_pool_heap: "$__all"
+      var-memory_pool_nonheap: "$__all"
+      timeout: 60
+
+  # ========== HTTP МЕТРИКИ (HTTP Performance) ==========
+  
+  - name: "http_codes"                   # Распределение HTTP кодов ответов
+    dashboard_uid: "spring-boot-2x"
+    dashboard_name: "spring-boot-2x"
+    orgId: 1
+    panelId: 111                         # ID панели для HTTP Codes
+    width: 1000
+    height: 500
+    vars:
+      var-application: "PLACEHOLDER"
+      var-instance: "$__all"
+      var-memory_pool_heap: "$__all"
+      var-memory_pool_nonheap: "$__all"
+      timeout: 60
+
+  - name: "requests_per_second"          # Количество запросов в секунду
+    dashboard_uid: "spring-boot-2x"
+    dashboard_name: "spring-boot-2x"
+    orgId: 1
+    panelId: 108                         # ID панели для Requests/second
+    width: 1000
+    height: 500
+    vars:
+      var-application: "PLACEHOLDER"
+      var-instance: "$__all"
+      var-memory_pool_heap: "$__all"
+      var-memory_pool_nonheap: "$__all"
+      timeout: 60
+
+  - name: "requests_duration"            # Длительность обработки запросов
+    dashboard_uid: "spring-boot-2x"
+    dashboard_name: "spring-boot-2x"
+    orgId: 1
+    panelId: 107                         # ID панели для Requests duration
+    width: 1000
+    height: 500
+    vars:
+      var-application: "PLACEHOLDER"
+      var-instance: "$__all"
+      var-memory_pool_heap: "$__all"
+      var-memory_pool_nonheap: "$__all"
+      timeout: 60
+
+  # ========== KUBERNETES МЕТРИКИ (Container Performance) ==========
+  
+  - name: "cpu_by_pod"                   # Использование CPU по подам
+    dashboard_uid: "kuber_api"           # UID для Kubernetes dashboard
+    dashboard_name: "kuber-for-api"      # Название Kubernetes dashboard
+    orgId: 1
+    panelId: 199                         # ID панели для CPU by pod
+    width: 1000
+    height: 500
+    vars:
+      var-datasource: "prometheus"       # Источник данных Prometheus
+      var-loki: "P8E80F9AEF21F6940"      # ID Loki источника
+      var-namespace: "astra-stress"       # Namespace в Kubernetes
+      var-node: "$__all"                 # Все ноды
+      var-container: "PLACEHOLDER"       # Будет заменено на название сервиса
+      var-pod: "$__all"                  # Все поды
+      var-less_then_perc: "$__all"       # Фильтр по процентилям (меньше)
+      var-more_then_perc: "$__all"       # Фильтр по процентилям (больше)
+      var-query: ""                      # Дополнительный запрос
+      timeout: 60
+
+  - name: "memory_usage_by_pods"         # Использование памяти по подам
+    dashboard_uid: "kuber_api"
+    dashboard_name: "kuber-for-api"
+    orgId: 1
+    panelId: 176                         # ID панели для Memory Usage by Pods
+    width: 1000
+    height: 500
+    vars:
       var-datasource: "prometheus"
       var-loki: "P8E80F9AEF21F6940"
       var-namespace: "astra-stress"
-      var-container: ["dh-documents-service", "dh-files-service"]
+      var-node: "$__all"
+      var-container: "PLACEHOLDER"
       var-pod: "$__all"
       var-less_then_perc: "$__all"
       var-more_then_perc: "$__all"
       var-query: ""
       timeout: 60
 
-  - name: "memory_usage_pod"
-    dashboard_uid: "q8KMdnmnk"
-    dashboard_name: "kuber-analitics"
+  # ========== POSTGRESQL МЕТРИКИ (Database Performance) ==========
+  
+  - name: "postgresql_average_request_time"  # Среднее время выполнения запросов PostgreSQL
+    dashboard_uid: "fepxcz1pv79q8d"          # UID для PostgreSQL dashboard
+    dashboard_name: "postgres-custom"        # Название PostgreSQL dashboard
     orgId: 1
-    panelId: 176
+    panelId: 1                               # ID панели для среднего времени запросов
     width: 1000
     height: 500
     vars:
-      var-node: "$__all"
-      var-datasource: "prometheus"
-      var-loki: "P8E80F9AEF21F6940"
-      var-namespace: "astra-stress"
-      var-container: ["dh-documents-service", "dh-files-service"]
-      var-pod: "$__all"
-      var-less_then_perc: "$__all"
-      var-more_then_perc: "$__all"
-      var-query: ""
+      var-DS_PROMETHEUS: "prometheus"         # Источник данных Prometheus
+      var-node: "astra-nt-tantor01"           # Нода PostgreSQL сервера
+      var-datname: "dh_documents_db"          # Название базы данных
       timeout: 60
 
-  - name: "throttling"
-    dashboard_uid: "q8KMdnmnk"
-    dashboard_name: "kuber-analitics"
+  - name: "postgresql_percentage_long_queries"  # Процент долгих запросов PostgreSQL
+    dashboard_uid: "fepxcz1pv79q8d"
+    dashboard_name: "postgres-custom"
     orgId: 1
-    panelId: 49
+    panelId: 15                              # ID панели для процента долгих запросов
     width: 1000
     height: 500
     vars:
-      var-node: "$__all"
-      var-datasource: "prometheus"
-      var-loki: "P8E80F9AEF21F6940"
-      var-namespace: "astra-stress"
-      var-container: ["dh-documents-service", "dh-files-service"]
-      var-pod: "$__all"
-      var-less_then_perc: "$__all"
-      var-more_then_perc: "$__all"
-      var-query: ""
+      var-DS_PROMETHEUS: "prometheus"
+      var-node: "astra-nt-tantor01"
+      var-datname: "dh_documents_db"
+      timeout: 60
+
+  - name: "postgresql_querys_per_seconds"     # Количество запросов в секунду PostgreSQL
+    dashboard_uid: "fepxcz1pv79q8d"
+    dashboard_name: "postgres-custom"
+    orgId: 1
+    panelId: 8                               # ID панели для запросов в секунду
+    width: 1000
+    height: 500
+    vars:
+      var-DS_PROMETHEUS: "prometheus"
+      var-node: "astra-nt-tantor01"
+      var-datname: "dh_documents_db"
       timeout: 60

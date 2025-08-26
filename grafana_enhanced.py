@@ -35,7 +35,10 @@ class GrafanaEnhanced:
         self.metrics = load_metrics_config()
         self.grafana_config = self.config['grafana']
         self.base_url = self.grafana_config['base_url']
-        self.headers = {'Authorization': self.grafana_config['api_key']}
+        api_key = str(self.grafana_config['api_key'])
+        if not api_key.lower().startswith('bearer '):
+            api_key = f"Bearer {api_key}"
+        self.headers = {'Authorization': api_key}
         
         # Setup logging
         logging.basicConfig(level=logging.INFO, 
@@ -85,41 +88,84 @@ class GrafanaEnhanced:
         """Build the render URL for a metric"""
         from_time, to_time = self._get_time_range()
         
-        # Build the render URL
-        render_url = f"{self.base_url}/render/d-solo/{metric_config['dashboard_uid']}"
+        # Build the render URL with dashboard name - this is important!
+        dashboard_uid = metric_config['dashboard_uid']
+        dashboard_name = metric_config['dashboard_name']
+        render_url = f"{self.base_url}/render/d-solo/{dashboard_uid}/{dashboard_name}"
         
-        # Build parameters
+        # Format time in ISO format like in your working curl
+        # Convert to UTC for the Z suffix
+        from_utc = from_time.astimezone(pytz.UTC)
+        to_utc = to_time.astimezone(pytz.UTC)
+        from_iso = from_utc.strftime('%Y-%m-%dT%H:%M:%S.%f')[:-3] + 'Z'
+        to_iso = to_utc.strftime('%Y-%m-%dT%H:%M:%S.%f')[:-3] + 'Z'
+        
+        # Build parameters using the same format as your working curl
         params = {
             'orgId': str(metric_config['orgId']),
             'panelId': str(metric_config['panelId']),
             'width': str(metric_config['width']),
             'height': str(metric_config['height']),
-            'timeout': str(metric_config.get('timeout', 60)),
-            'tz': self.config['mainConfig']['timezone'],
-            'from': int(from_time.timestamp() * 1000),
-            'to': int(to_time.timestamp() * 1000)
+            'timezone': self.config['mainConfig']['timezone'],  # Use 'timezone' not 'tz'
+            'from': from_iso,
+            'to': to_iso
         }
         
-        # Add variables
+        # Add variables and replace PLACEHOLDER with actual service names
         if 'vars' in metric_config:
             for key, value in metric_config['vars'].items():
-                if key != 'timeout':  # Skip timeout as it's already added
+                if key != 'timeout':  # Skip timeout as it's not needed for render URL
                     if isinstance(value, list):
                         # Handle array variables
                         for item in value:
                             params[key] = item  # This will overwrite, need to handle properly
                     else:
-                        params[key] = value
+                        # Replace PLACEHOLDER with actual service name
+                        if value == "PLACEHOLDER":
+                            # Get first enabled service from config
+                            enabled_services = [name for name, enabled in self.config['services'].items() 
+                                              if enabled and name not in ['ssh_service', 'grafana_service']]
+                            if enabled_services:
+                                params[key] = enabled_services[0]  # Use first enabled service
+                            else:
+                                params[key] = "dh-documents-service"  # fallback
+                        elif isinstance(value, str) and value.startswith('$'):
+                            # Don't encode $ for Grafana variables - leave as is
+                            params[key] = value
+                        else:
+                            params[key] = value
         
-        # Construct URL with parameters
-        param_string = '&'.join([f"{k}={v}" for k, v in params.items()])
+        # Construct URL with parameters - minimal encoding to match curl format exactly
+        param_parts = []
+        for k, v in params.items():
+            # Don't encode common characters that are safe in URLs
+            if isinstance(v, str) and ('$__all' in v or k in ['timezone', 'from', 'to']):
+                # Keep these parameters exactly as they are without encoding
+                param_parts.append(f"{k}={v}")
+            else:
+                # Only encode if absolutely necessary
+                param_parts.append(f"{k}={v}") 
+        
+        param_string = '&'.join(param_parts)
         return f"{render_url}?{param_string}"
     
     def _get_time_range(self):
         """Get the time range from config"""
         tz = pytz.timezone(self.config['mainConfig']['timezone'])
-        from_time = datetime.strptime(self.config['mainConfig']['from'], "%Y-%m-%d %H:%M:%S")
-        to_time = datetime.strptime(self.config['mainConfig']['to'], "%Y-%m-%d %H:%M:%S")
+        
+        # Try to parse with milliseconds first, then without
+        from_str = self.config['mainConfig']['from']
+        to_str = self.config['mainConfig']['to']
+        
+        try:
+            from_time = datetime.strptime(from_str, "%Y-%m-%d %H:%M:%S.%f")
+        except ValueError:
+            from_time = datetime.strptime(from_str, "%Y-%m-%d %H:%M:%S")
+            
+        try:
+            to_time = datetime.strptime(to_str, "%Y-%m-%d %H:%M:%S.%f")
+        except ValueError:
+            to_time = datetime.strptime(to_str, "%Y-%m-%d %H:%M:%S")
         
         # Localize to timezone
         from_time = tz.localize(from_time)
@@ -157,6 +203,7 @@ class GrafanaEnhanced:
                 # Build URL
                 render_url = self.build_render_url(metric_config)
                 self.logger.info(f"Downloading {metric_name} (attempt {attempt + 1}/{retries})")
+                self.logger.info(f"URL: {render_url}")
                 
                 # Make request
                 response = requests.get(render_url, headers=self.headers, 
