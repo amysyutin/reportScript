@@ -329,8 +329,7 @@ def download_postgresql_metrics(cfg, main_folder_path):
         successful_downloads = 0
         failed_downloads = 0
 
-        # Переменные Grafana  
-        variables = cfg['postgresql_grafana']['postgresql_variables']
+        # Переменные Grafana берём из каждой метрики (metrics_urls.yml)
 
         # Создаем папку для метрик PostgreSQL
         postgresql_folder = os.path.join(main_folder_path, "metrics", "postgresql_metrics")
@@ -343,6 +342,11 @@ def download_postgresql_metrics(cfg, main_folder_path):
             logging.info(f"  📈 [{metric_index}/{len(postgresql_metrics_config)}] Скачиваем метрику: {metric_name}")
 
             try:
+                # Берём переменные из метрики (и убираем служебные ключи вроде timeout)
+                vars_dict = dict(metric.get('vars', {})) if isinstance(metric.get('vars', {}), dict) else {}
+                if 'timeout' in vars_dict:
+                    vars_dict.pop('timeout', None)
+
                 # Параметры запроса
                 params = {
                     'base_url': cfg['postgresql_grafana']['base_url'],
@@ -355,7 +359,7 @@ def download_postgresql_metrics(cfg, main_folder_path):
                     'timezone': cfg['postgresql_grafana']['timezone'],
                     'from': from_time,
                     'to': to_time,
-                    'vars': variables
+                    'vars': vars_dict
                 }
 
                 # Формируем полный URL для скачивания панели

@@ -64,11 +64,4 @@ postgresql_grafana:
   api_key: "${POSTGRESQL_GRAFANA_API_KEY}"  # Тот же токен что и основная Grafana
   timezone: "Europe/Moscow"
   metrics_config: "metrics_urls.yml"  # Используем общий файл метрик
-  
-  # PostgreSQL настройки (переменные для дашборда)
-  postgresql_variables:
-    var-DS_PROMETHEUS: "${PG_VAR_DS_PROMETHEUS}"
-    var-node: "${PG_VAR_NODE}"
-    var-datname: "${PG_VAR_DATNAME}"
-
 
