@@ -75,10 +75,6 @@ GATLING_GRAFANA_LOCAL_PATH=./reports/metrics/gatling_metrics
 POSTGRESQL_GRAFANA_BASE_URL=https://grafana.example.com
 POSTGRESQL_GRAFANA_API_KEY=Bearer <token>
 POSTGRESQL_GRAFANA_LOCAL_PATH=./reports/metrics/postgresql_metrics
-PG_VAR_DS_PROMETHEUS=PBFA97CFB590B2093
-PG_VAR_NODE=$__all
-PG_VAR_DATNAME=$__all
-```
 
 ## Конфигурация
 
