@@ -22,7 +22,6 @@ gatling_grafana:
   local_path: "${GATLING_GRAFANA_LOCAL_PATH}"
   base_url: "${GATLING_GRAFANA_BASE_URL}"
   api_key: "${GATLING_GRAFANA_API_KEY}"
-  timezone: "${TIMEZONE}"
   gatling_metrics_config: "gatling_metrics_urls.yml"
   gatling_scripts:
     Attribute_Search_1: true
@@ -108,6 +107,7 @@ tail -f app.log
 - Название: `gatling-metrics`
 - Подстановка переменных: `PLACEHOLDER` → имя скрипта
 - Временной диапазон: общий из `mainConfig` → конвертация в UTC
+- Часовой пояс: берётся из `mainConfig.timezone` для всех типов метрик
 - Формат: PNG (напр., 1000x500)
 
 ## Интеграция с общим процессом

@@ -220,7 +220,7 @@ def download_gatling_metrics(cfg, main_folder_path):
                         'width': metric['width'],
                         'height': metric['height'],
                         'timeout': vars_dict.get('timeout', 60),
-                        'timezone': cfg['gatling_grafana']['timezone'],
+                        'timezone': timezone,
                         'from': from_time,
                         'to': to_time,
                         'vars': vars_dict
@@ -356,7 +356,7 @@ def download_postgresql_metrics(cfg, main_folder_path):
                     'panelId': metric['panelId'],
                     'width': metric['width'],
                     'height': metric['height'],
-                    'timezone': cfg['postgresql_grafana']['timezone'],
+                    'timezone': timezone,
                     'from': from_time,
                     'to': to_time,
                     'vars': vars_dict

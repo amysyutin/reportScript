@@ -35,7 +35,6 @@ grafana:
   local_path: "${GRAFANA_LOCAL_PATH}"
   metrics_config: "metrics_urls.yml"
   api_key: "${GRAFANA_API_KEY}"
-  timezone: "${TIMEZONE}"
   base_url: "${GRAFANA_BASE_URL}"
 
 # Конфигурация для Gatling метрик (вторая Grafana)
@@ -43,7 +42,6 @@ gatling_grafana:
   local_path: "${GATLING_GRAFANA_LOCAL_PATH}"
   base_url: "${GATLING_GRAFANA_BASE_URL}"
   api_key: "${GATLING_GRAFANA_API_KEY}"  # Отдельный токен для Gatling Grafana
-  timezone: "Europe/Moscow"
   gatling_metrics_config: "gatling_metrics_urls.yml"
   
   # Gatling скрипты (включить/выключить каждый отдельно)
@@ -62,6 +60,5 @@ postgresql_grafana:
   local_path: "${POSTGRESQL_GRAFANA_LOCAL_PATH}"
   base_url: "${POSTGRESQL_GRAFANA_BASE_URL}"  # Тот же URL что и основная Grafana
   api_key: "${POSTGRESQL_GRAFANA_API_KEY}"  # Тот же токен что и основная Grafana
-  timezone: "Europe/Moscow"
   metrics_config: "metrics_urls.yml"  # Используем общий файл метрик
 
