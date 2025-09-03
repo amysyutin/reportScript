@@ -99,6 +99,10 @@ def build_grafana_url(params: dict) -> str:
     # Для PostgreSQL метрик
     if params['dashboard_uid'] == 'fepxcz1pv79q8d':
         query_parts.append(f"timezone={params['timezone']}")
+
+        # Для PostgreSQL метрик 2
+    if params['dashboard_uid'] == '000000039':
+        query_parts.append(f"timezone={params['timezone']}")    
     
     query_string = '&'.join(query_parts)
     return f"{render_url}?{query_string}"
@@ -110,15 +114,31 @@ def download_metric(session: requests.Session, url: str, headers: dict, output_f
     Returns ``True`` on success, ``False`` otherwise.
     """
     try:
-        response = session.get(url, headers=headers, verify=False, timeout=120)
+        req_headers = dict(headers or {})
+        req_headers.setdefault("Accept", "image/png")
+        response = session.get(url, headers=req_headers, verify=False, timeout=120)
         if response.status_code != 200:
             logging.error(
                 f"HTTP {response.status_code} while downloading {url}: {response.text}"
             )
             return False
 
+        content_type = response.headers.get("Content-Type", "").lower()
+        content_length = int(response.headers.get("Content-Length", "0") or 0)
+
+        # Если это не PNG – вероятно, ошибка авторизации/HTML страница
+        if "image/png" not in content_type:
+            snippet = response.text[:200] if hasattr(response, "text") else ""
+            logging.error(f"Неверный Content-Type '{content_type}' для {url}. Фрагмент ответа: {snippet}")
+            return False
+
+        # Сохраняем файл
         with open(output_file, "wb") as f:
             f.write(response.content)
+
+        # Доп. диагностика возможных пустышек
+        if content_length and content_length < 8000:
+            logging.warning(f"Возможна пустая картинка (<8KB): {output_file} ({content_length} байт)")
 
         logging.info(f"Файл сохранен: {output_file}")
         return True
@@ -212,7 +232,7 @@ def download_gatling_metrics(cfg, main_folder_path):
                     
                     # Параметры запроса
                     params = {
-                        'base_url': cfg['gatling_grafana']['base_url'],
+                        'base_url': base_url,
                         'dashboard_uid': metric['dashboard_uid'],
                         'dashboard_name': metric['dashboard_name'],
                         'orgId': metric['orgId'],
@@ -349,7 +369,7 @@ def download_postgresql_metrics(cfg, main_folder_path):
 
                 # Параметры запроса
                 params = {
-                    'base_url': cfg['postgresql_grafana']['base_url'],
+                    'base_url': pg_base_url,
                     'dashboard_uid': metric['dashboard_uid'],
                     'dashboard_name': metric['dashboard_name'],
                     'orgId': metric['orgId'],
@@ -500,7 +520,7 @@ def download_grafana_metrics(cfg, metrics, main_folder_path, services):
                     # ========== ФОРМИРОВАНИЕ ПАРАМЕТРОВ ЗАПРОСА ==========
                     
                     params = {
-                        'base_url': cfg['grafana']['base_url'],           # URL Grafana сервера
+                        'base_url': gr_base_url,           # URL Grafana сервера
                         'dashboard_uid': metric.dashboard_uid,         # Уникальный ID dashboard'а
                         'dashboard_name': metric.dashboard_name,       # Название dashboard'а
                         'orgId': metric.orgId,                         # ID организации

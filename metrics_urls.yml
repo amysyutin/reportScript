@@ -277,24 +277,37 @@ metrics:
 
   # ========== POSTGRESQL МЕТРИКИ (Database Performance) ==========
   
-  - name: "postgresql_average_request_time"  # Среднее время выполнения запросов PostgreSQL
-    dashboard_uid: "fepxcz1pv79q8d"          # UID для PostgreSQL dashboard
-    dashboard_name: "postgres-custom"        # Название PostgreSQL dashboard
+  - name: "postgresql_average_request_time_dh_documents_db"  
+    dashboard_uid: "fepxcz1pv79q8d"          
+    dashboard_name: "postgres-custom"        
     orgId: 1
-    panelId: 1                               # ID панели для среднего времени запросов
+    panelId: 1                             
     width: 1000
     height: 500
     vars:
-      var-DS_PROMETHEUS: "prometheus"         # Источник данных Prometheus
-      var-node: "astra-nt-tantor01"           # Нода PostgreSQL сервера
-      var-datname: "dh_documents_db"          # Название базы данных
+      var-DS_PROMETHEUS: "prometheus"      
+      var-node: "astra-nt-tantor01"       
+      var-datname: "dh_documents_db"         
       timeout: 60
+ 
+  - name: "postgresql_average_request_time_dh_files_db"  
+    dashboard_uid: "fepxcz1pv79q8d"          
+    dashboard_name: "postgres-custom"        
+    orgId: 1
+    panelId: 1                             
+    width: 1000
+    height: 500
+    vars:
+      var-DS_PROMETHEUS: "prometheus"      
+      var-node: "astra-nt-tantor01"       
+      var-datname: "dh_files_db"         
+      timeout: 60      
 
-  - name: "postgresql_percentage_long_queries"  # Процент долгих запросов PostgreSQL
+  - name: "postgresql_pg_locks_count_dh_documents_db"  
     dashboard_uid: "fepxcz1pv79q8d"
     dashboard_name: "postgres-custom"
     orgId: 1
-    panelId: 15                              # ID панели для процента долгих запросов
+    panelId: 7                              
     width: 1000
     height: 500
     vars:
@@ -303,11 +316,24 @@ metrics:
       var-datname: "dh_documents_db"
       timeout: 60
 
-  - name: "postgresql_querys_per_seconds"     # Количество запросов в секунду PostgreSQL
+  - name: "postgresql_pg_locks_count_dh_files_db"  
     dashboard_uid: "fepxcz1pv79q8d"
     dashboard_name: "postgres-custom"
     orgId: 1
-    panelId: 8                               # ID панели для запросов в секунду
+    panelId: 7                              
+    width: 1000
+    height: 500
+    vars:
+      var-DS_PROMETHEUS: "prometheus"
+      var-node: "astra-nt-tantor01"
+      var-datname: "dh_files_db"
+      timeout: 60      
+
+  - name: "postgresql_querys_per_seconds_dh_documents_db"     
+    dashboard_uid: "fepxcz1pv79q8d"
+    dashboard_name: "postgres-custom"
+    orgId: 1
+    panelId: 8                               
     width: 1000
     height: 500
     vars:
@@ -315,3 +341,46 @@ metrics:
       var-node: "astra-nt-tantor01"
       var-datname: "dh_documents_db"
       timeout: 60
+
+  - name: "postgresql_querys_per_seconds_dh_files_db"     
+    dashboard_uid: "fepxcz1pv79q8d"
+    dashboard_name: "postgres-custom"
+    orgId: 1
+    panelId: 8                               
+    width: 1000
+    height: 500
+    vars:
+      var-DS_PROMETHEUS: "prometheus"
+      var-node: "astra-nt-tantor01"
+      var-datname: "dh_files_db"
+      timeout: 60
+
+
+  - name: "postgresql_connections_dh_documents_db"
+    dashboard_uid: "000000039"
+    dashboard_name: "postgresql-database"
+    orgId: 1
+    panelId: 60
+    width: 1000
+    height: 500
+    vars:
+      var-DS_PROMETHEUS: "prometheus"
+      var-instance: "172.19.93.92:9187"
+      var-datname: "dh_documents_db"
+      var-mode: "$__all"
+      timeout: 60
+
+
+  - name: "postgresql_connections_dh_files_db"
+    dashboard_uid: "000000039"
+    dashboard_name: "postgresql-database"
+    orgId: 1
+    panelId: 60
+    width: 1000
+    height: 500
+    vars:
+      var-DS_PROMETHEUS: "prometheus"
+      var-instance: "172.19.93.92:9187"
+      var-datname: "dh_files_db"
+      var-mode: "$__all"
+      timeout: 60    

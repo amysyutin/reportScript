@@ -1,8 +1,8 @@
 mainConfig:
-  scenario: "TEST"
-  type_of_script: "TEST"
-  from: "2025-08-23 08:07:48.562"
-  to: "2025-08-25 15:30:53.381"
+  scenario: "Upload_file"
+  type_of_script: "Maxperf"
+  from: "2025-09-01 13:07:36.562"
+  to: "2025-09-01 15:05:05.381"
   timezone: "${TIMEZONE}"
 
 main_folder: "${REPORTS_BASE_DIR}"
@@ -12,17 +12,17 @@ services:
   ssh_service: true          # Скачивание отчетов Gatling по SSH
   grafana_service: true      # Скачивание метрик из Grafana
   gatling_metrics_service: true   # Скачивание метрик Gatling из дашборда
-  postgresql_metrics_service: true # Скачивание метрик PostgreSQL из дашборда
+  postgresql_metrics_service: false # Скачивание метрик PostgreSQL из дашборда
   
   # Сервисы приложений (для которых будут скачиваться метрики)
   # Установите true для тех сервисов, для которых нужно скачать метрики
-  dh-registry-service: true     # Сервис регистрации
-  dh-documents-service: true    # Сервис работы с документами
-  dh-files-service: true        # Сервис работы с файлами
-  dh-auth-service: true        # Сервис аутентификации (отключен)
-  dh-notifications-service: true  # Сервис уведомлений (отключен)
-  dh-federal-search-service: true  # Сервис федерального поиска
-  ldm-index-content-controller-service: true
+  dh-registry-service: false     # Сервис регистрации
+  dh-documents-service: false    # Сервис работы с документами
+  dh-files-service: false        # Сервис работы с файлами
+  dh-auth-service: false        # Сервис аутентификации (отключен)
+  dh-notifications-service: false  # Сервис уведомлений (отключен)
+  dh-federal-search-service: false  # Сервис федерального поиска
+  ldm-index-content-controller-service: false
 
 ssh_config:
   host: "${SSH_HOST}"
@@ -49,11 +49,11 @@ gatling_grafana:
     Get_Code_Atributes: true
     Upload_File: true            # Скрипт загрузки файлов
     Create_Document: true
-    Federal_Search: true      # Скрипт создания документов
-    Attribute_Search_1: true   # Поиск атрибутов v1
-    Attribute_Search_2: true    # Поиск атрибутов v2
-    Attribute_Search_3: true
-    Attribute_Search_4: true
+    Federal_Search: false      # Скрипт создания документов
+    Attribute_Search_1: false   # Поиск атрибутов v1
+    Attribute_Search_2: false    # Поиск атрибутов v2
+    Attribute_Search_3: false
+    Attribute_Search_4: false
 
 # Конфигурация для PostgreSQL метрик (основная Grafana)
 postgresql_grafana:
