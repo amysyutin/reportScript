@@ -1,8 +1,8 @@
 mainConfig:
-  scenario: "Upload_file"
+  scenario: "Upload_file3"
   type_of_script: "Maxperf"
-  from: "2025-09-01 13:07:36.562"
-  to: "2025-09-01 15:05:05.381"
+  from: "2025-09-03 13:36:52.562"
+  to: "2025-09-03 15:43:05.381"
   timezone: "${TIMEZONE}"
 
 main_folder: "${REPORTS_BASE_DIR}"
@@ -12,13 +12,13 @@ services:
   ssh_service: true          # Скачивание отчетов Gatling по SSH
   grafana_service: true      # Скачивание метрик из Grafana
   gatling_metrics_service: true   # Скачивание метрик Gatling из дашборда
-  postgresql_metrics_service: false # Скачивание метрик PostgreSQL из дашборда
+  postgresql_metrics_service: true # Скачивание метрик PostgreSQL из дашборда
   
   # Сервисы приложений (для которых будут скачиваться метрики)
   # Установите true для тех сервисов, для которых нужно скачать метрики
-  dh-registry-service: false     # Сервис регистрации
-  dh-documents-service: false    # Сервис работы с документами
-  dh-files-service: false        # Сервис работы с файлами
+  dh-registry-service: true     # Сервис регистрации
+  dh-documents-service: true    # Сервис работы с документами
+  dh-files-service: true        # Сервис работы с файлами
   dh-auth-service: false        # Сервис аутентификации (отключен)
   dh-notifications-service: false  # Сервис уведомлений (отключен)
   dh-federal-search-service: false  # Сервис федерального поиска

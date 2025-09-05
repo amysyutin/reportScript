@@ -277,6 +277,8 @@ metrics:
 
   # ========== POSTGRESQL МЕТРИКИ (Database Performance) ==========
   
+  # 1. average_request_time
+
   - name: "postgresql_average_request_time_dh_documents_db"  
     dashboard_uid: "fepxcz1pv79q8d"          
     dashboard_name: "postgres-custom"        
@@ -290,6 +292,8 @@ metrics:
       var-datname: "dh_documents_db"         
       timeout: 60
  
+ # 2. average_request_time
+
   - name: "postgresql_average_request_time_dh_files_db"  
     dashboard_uid: "fepxcz1pv79q8d"          
     dashboard_name: "postgres-custom"        
@@ -303,11 +307,13 @@ metrics:
       var-datname: "dh_files_db"         
       timeout: 60      
 
-  - name: "postgresql_pg_locks_count_dh_documents_db"  
+ # 3. longest_active_query
+
+  - name: "postgresql_longest_active_query_dh_documents_db"  
     dashboard_uid: "fepxcz1pv79q8d"
     dashboard_name: "postgres-custom"
     orgId: 1
-    panelId: 7                              
+    panelId: 2                              
     width: 1000
     height: 500
     vars:
@@ -316,18 +322,52 @@ metrics:
       var-datname: "dh_documents_db"
       timeout: 60
 
-  - name: "postgresql_pg_locks_count_dh_files_db"  
+ # 4. longest_active_query
+
+  - name: "postgresql_longest_active_query_dh_files_db"  
     dashboard_uid: "fepxcz1pv79q8d"
     dashboard_name: "postgres-custom"
     orgId: 1
-    panelId: 7                              
+    panelId: 2                              
     width: 1000
     height: 500
     vars:
       var-DS_PROMETHEUS: "prometheus"
       var-node: "astra-nt-tantor01"
       var-datname: "dh_files_db"
-      timeout: 60      
+      timeout: 60   
+
+# 5. idle_in_transaction
+
+  - name: "postgresql_idle_in_transaction_dh_documents_db"     
+    dashboard_uid: "fepxcz1pv79q8d"
+    dashboard_name: "postgres-custom"
+    orgId: 1
+    panelId: 5                               
+    width: 1000
+    height: 500
+    vars:
+      var-DS_PROMETHEUS: "prometheus"
+      var-node: "astra-nt-tantor01"
+      var-datname: "dh_documents_db"
+      timeout: 60
+
+# 6. idle_in_transaction
+
+  - name: "postgresql_idle_in_transaction_dh_files_db"     
+    dashboard_uid: "fepxcz1pv79q8d"
+    dashboard_name: "postgres-custom"
+    orgId: 1
+    panelId: 5                               
+    width: 1000
+    height: 500
+    vars:
+      var-DS_PROMETHEUS: "prometheus"
+      var-node: "astra-nt-tantor01"
+      var-datname: "dh_files_db"
+      timeout: 60
+
+# 7. querys_per_seconds
 
   - name: "postgresql_querys_per_seconds_dh_documents_db"     
     dashboard_uid: "fepxcz1pv79q8d"
@@ -342,6 +382,8 @@ metrics:
       var-datname: "dh_documents_db"
       timeout: 60
 
+# 8. querys_per_seconds
+
   - name: "postgresql_querys_per_seconds_dh_files_db"     
     dashboard_uid: "fepxcz1pv79q8d"
     dashboard_name: "postgres-custom"
@@ -355,32 +397,66 @@ metrics:
       var-datname: "dh_files_db"
       timeout: 60
 
+# 9. blocks_by_type
 
-  - name: "postgresql_connections_dh_documents_db"
-    dashboard_uid: "000000039"
-    dashboard_name: "postgresql-database"
+  - name: "postgresql_blocks_by_type_dh_documents_db"     
+    dashboard_uid: "fepxcz1pv79q8d"
+    dashboard_name: "postgres-custom"
     orgId: 1
-    panelId: 60
+    panelId: 7                              
     width: 1000
     height: 500
     vars:
       var-DS_PROMETHEUS: "prometheus"
-      var-instance: "172.19.93.92:9187"
+      var-node: "astra-nt-tantor01"
       var-datname: "dh_documents_db"
-      var-mode: "$__all"
       timeout: 60
 
+# 10. blocks_by_type
 
-  - name: "postgresql_connections_dh_files_db"
-    dashboard_uid: "000000039"
-    dashboard_name: "postgresql-database"
+  - name: "postgresql_blocks_by_type_dh_files_db"     
+    dashboard_uid: "fepxcz1pv79q8d"
+    dashboard_name: "postgres-custom"
     orgId: 1
-    panelId: 60
+    panelId: 7                               
     width: 1000
     height: 500
     vars:
       var-DS_PROMETHEUS: "prometheus"
-      var-instance: "172.19.93.92:9187"
+      var-node: "astra-nt-tantor01"
       var-datname: "dh_files_db"
-      var-mode: "$__all"
-      timeout: 60    
+      timeout: 60      
+
+
+
+
+
+
+  # - name: "postgresql_connections_dh_documents_db"
+  #   dashboard_uid: "000000039"
+  #   dashboard_name: "postgresql-database"
+  #   orgId: 1
+  #   panelId: 60
+  #   width: 1000
+  #   height: 500
+  #   vars:
+  #     var-DS_PROMETHEUS: "prometheus"
+  #     var-instance: "172.19.93.92:9187"
+  #     var-datname: "dh_documents_db"
+  #     var-mode: "$__all"
+  #     timeout: 60
+
+
+  # - name: "postgresql_connections_dh_files_db"
+  #   dashboard_uid: "000000039"
+  #   dashboard_name: "postgresql-database"
+  #   orgId: 1
+  #   panelId: 60
+  #   width: 1000
+  #   height: 500
+  #   vars:
+  #     var-DS_PROMETHEUS: "prometheus"
+  #     var-instance: "172.19.93.92:9187"
+  #     var-datname: "dh_files_db"
+  #     var-mode: "$__all"
+  #     timeout: 60    
