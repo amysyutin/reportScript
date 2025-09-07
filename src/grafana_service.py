@@ -3,13 +3,14 @@ import requests
 import logging
 import urllib.parse
 import urllib3
+from typing import List, Tuple, Optional
 from requests.adapters import HTTPAdapter, Retry
 from requests.exceptions import Timeout, ConnectionError, HTTPError
-from utils import to_utc_iso
+from .utils import to_utc_iso
 
 # Отключаем предупреждения о небезопасном SSL
 
-from config import load_metrics_config
+from .config import load_metrics_config
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 
@@ -28,84 +29,46 @@ def create_session(retries: int = 3, backoff_factor: float = 0.5) -> requests.Se
     return session
 
 def build_grafana_url(params: dict) -> str:
-    """Build full Grafana render URL matching curl_grafana.ini format exactly.
+    """Собирает полный URL рендера панели Grafana.
 
-    Parameters expected in ``params``:
-        base_url (str): base Grafana URL
-        dashboard_uid (str): dashboard uid
-        dashboard_name (str): dashboard name
-        orgId (int/str)
-        panelId (int/str)
-        width (int/str)
-        height (int/str)
-        timeout (int/str): removed from query - not in curl examples
-        timezone (str)
-        from (str): start time in ISO8601 UTC
-        to (str): end time in ISO8601 UTC
-        vars (dict): optional variables
-
-    Returns
-    -------
-    str
-        Complete render URL for the panel.
+    Обязательные ключи в ``params``:
+        - base_url, dashboard_uid, dashboard_name, orgId, panelId, width, height, timezone, from, to
+        - vars (dict, опционально): элементы могут быть строками или списками. Имена будут приведены к виду 'var-*'
     """
 
     render_url = f"{params['base_url']}/render/d-solo/{params['dashboard_uid']}/{params['dashboard_name']}"
 
-    # Порядок параметров как в curl_grafana.ini
-    query_parts = []
-    query_parts.append(f"orgId={params['orgId']}")
-    query_parts.append(f"panelId={params['panelId']}")
-    query_parts.append(f"width={params['width']}")
-    query_parts.append(f"height={params['height']}")
-    
-    # Для некоторых метрик временная зона идет после размеров, для некоторых - в конце
-    if params['dashboard_uid'] in ['spring-boot-2x']:
-        if params.get('panelId') in [95, 96]:  # CPU Usage и Load Average
-            query_parts.append(f"timezone={params['timezone']}")
-    
-    # Добавляем временной диапазон (с миллисекундами)
-    from_time = params['from']
-    to_time = params['to']
-    
-    # Добавляем миллисекунды если их нет
-    if not from_time.endswith('.000Z') and not '.' in from_time.split('T')[1]:
-        from_time = from_time.replace('Z', '.562Z')
-    if not to_time.endswith('.000Z') and not '.' in to_time.split('T')[1]:
-        to_time = to_time.replace('Z', '.381Z')
-    
-    query_parts.append(f"from={from_time}")
-    query_parts.append(f"to={to_time}")
-    
-    # Добавляем переменные Grafana (без URL-кодирования $ символов)
-    vars_dict = params.get('vars', {})
-    for name, value in vars_dict.items():
-        # Не кодируем $ символы для Grafana переменных
-        encoded_value = str(value).replace(' ', '+')  # Только пробелы кодируем как +
-        query_parts.append(f"{name}={encoded_value}")
-    
-    # Для метрик памяти timezone идет в конце
-    if params['dashboard_uid'] in ['spring-boot-2x'] and params.get('panelId') not in [95, 96]:
-        query_parts.append(f"timezone={params['timezone']}")
-    
-    # Для Kubernetes метрик
-    if params['dashboard_uid'] == 'kuber_api':
-        query_parts.append(f"timezone={params['timezone']}")
-    
-    # Для Gatling метрик
-    if params['dashboard_uid'] == 'de9jk1ju5vmdcb':
-        query_parts.append(f"timezone={params['timezone']}")
-    
-    # Для PostgreSQL метрик
-    if params['dashboard_uid'] == 'fepxcz1pv79q8d':
-        query_parts.append(f"timezone={params['timezone']}")
+    # Базовые параметры
+    query: List[Tuple[str, str]] = []
+    for key in ["orgId", "panelId", "width", "height", "timezone", "from", "to"]:
+        value = params.get(key)
+        if value is not None:
+            query.append((key, str(value)))
 
-        # Для PostgreSQL метрик 2
-    if params['dashboard_uid'] == '000000039':
-        query_parts.append(f"timezone={params['timezone']}")    
-    
-    query_string = '&'.join(query_parts)
+    # Переменные Grafana: нормализуем к виду var-*
+    vars_dict = params.get("vars", {}) or {}
+    for raw_name, raw_value in vars_dict.items():
+        name = raw_name if raw_name.startswith("var-") else f"var-{raw_name}"
+        # Поддержка списков значений (doseq)
+        if isinstance(raw_value, list):
+            for item in raw_value:
+                query.append((name, str(item)))
+        else:
+            query.append((name, str(raw_value)))
+
+    # Формируем строку запроса c поддержкой повторяющихся ключей
+    query_string = urllib.parse.urlencode(query, doseq=True)
     return f"{render_url}?{query_string}"
+
+
+def _is_png_file(path: str) -> bool:
+    """Проверяет PNG по сигнатуре файла."""
+    try:
+        with open(path, "rb") as f:
+            header = f.read(8)
+        return header.startswith(b"\x89PNG")
+    except Exception:
+        return False
 
 
 def download_metric(session: requests.Session, url: str, headers: dict, output_file: str) -> bool:
@@ -136,9 +99,16 @@ def download_metric(session: requests.Session, url: str, headers: dict, output_f
         with open(output_file, "wb") as f:
             f.write(response.content)
 
-        # Доп. диагностика возможных пустышек
+        # Проверка содержимого файла: размер и PNG-сигнатура
         if content_length and content_length < 8000:
             logging.warning(f"Возможна пустая картинка (<8KB): {output_file} ({content_length} байт)")
+        if not _is_png_file(output_file):
+            logging.error(f"Файл {output_file} не является валидным PNG")
+            try:
+                os.remove(output_file)
+            except Exception:
+                pass
+            return False
 
         logging.info(f"Файл сохранен: {output_file}")
         return True
@@ -147,7 +117,7 @@ def download_metric(session: requests.Session, url: str, headers: dict, output_f
         logging.error(f"Ошибка при скачивании {url}: {e}")
         return False
 
-def download_gatling_metrics(cfg, main_folder_path):
+def download_gatling_metrics(cfg, main_folder_path, session: Optional[requests.Session] = None):
     """
     Скачивает метрики Gatling для всех включенных скриптов.
     
@@ -197,8 +167,8 @@ def download_gatling_metrics(cfg, main_folder_path):
         from_time = to_utc_iso(cfg['mainConfig']['from'], timezone)
         to_time = to_utc_iso(cfg['mainConfig']['to'], timezone)
         
-        # Создаем HTTP сессию
-        session = create_session()
+        # Создаем/переиспользуем HTTP сессию
+        session = session or create_session()
         
         total_successful = 0
         total_failed = 0
@@ -293,7 +263,7 @@ def download_gatling_metrics(cfg, main_folder_path):
         raise
 
 
-def download_postgresql_metrics(cfg, main_folder_path):
+def download_postgresql_metrics(cfg, main_folder_path, session: Optional[requests.Session] = None):
     """
     Скачивает метрики PostgreSQL.
 
@@ -343,8 +313,8 @@ def download_postgresql_metrics(cfg, main_folder_path):
         from_time = to_utc_iso(cfg['mainConfig']['from'], timezone)
         to_time = to_utc_iso(cfg['mainConfig']['to'], timezone)
 
-        # Создаем HTTP сессию
-        session = create_session()
+        # Создаем/переиспользуем HTTP сессию
+        session = session or create_session()
 
         successful_downloads = 0
         failed_downloads = 0
@@ -472,10 +442,10 @@ def download_grafana_metrics(cfg, metrics, main_folder_path, services):
         session = create_session()
         
         # ========== СКАЧИВАНИЕ GATLING МЕТРИК ==========
-        download_gatling_metrics(cfg, main_folder_path)
+        download_gatling_metrics(cfg, main_folder_path, session)
         
         # ========== СКАЧИВАНИЕ POSTGRESQL МЕТРИК ==========
-        download_postgresql_metrics(cfg, main_folder_path)
+        download_postgresql_metrics(cfg, main_folder_path, session)
         
         # ========== ОБРАБОТКА СЕРВИСОВ ==========
         

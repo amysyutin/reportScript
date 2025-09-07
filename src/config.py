@@ -2,7 +2,7 @@ import yaml
 import os
 import re
 from pathlib import Path
-from utils import logger, ensure_file_exists
+from .utils import logger, ensure_file_exists
 
 # Опционально подгружаем .env, если установлен python-dotenv
 try:
