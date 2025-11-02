@@ -6,11 +6,11 @@ import urllib3
 from typing import List, Tuple, Optional
 from requests.adapters import HTTPAdapter, Retry
 from requests.exceptions import Timeout, ConnectionError, HTTPError
-from .utils import to_utc_iso
+from utils import to_utc_iso, to_utc_epoch_ms
 
 # Отключаем предупреждения о небезопасном SSL
 
-from .config import load_metrics_config
+from config import load_metrics_config
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 
@@ -164,8 +164,8 @@ def download_gatling_metrics(cfg, main_folder_path, session: Optional[requests.S
         
         # Параметры времени
         timezone = cfg['mainConfig']['timezone']
-        from_time = to_utc_iso(cfg['mainConfig']['from'], timezone)
-        to_time = to_utc_iso(cfg['mainConfig']['to'], timezone)
+        from_time = to_utc_epoch_ms(cfg['mainConfig']['from'], timezone)
+        to_time = to_utc_epoch_ms(cfg['mainConfig']['to'], timezone)
         
         # Создаем/переиспользуем HTTP сессию
         session = session or create_session()
@@ -310,8 +310,8 @@ def download_postgresql_metrics(cfg, main_folder_path, session: Optional[request
 
         # Параметры времени
         timezone = cfg['mainConfig']['timezone']
-        from_time = to_utc_iso(cfg['mainConfig']['from'], timezone)
-        to_time = to_utc_iso(cfg['mainConfig']['to'], timezone)
+        from_time = to_utc_epoch_ms(cfg['mainConfig']['from'], timezone)
+        to_time = to_utc_epoch_ms(cfg['mainConfig']['to'], timezone)
 
         # Создаем/переиспользуем HTTP сессию
         session = session or create_session()
@@ -432,8 +432,8 @@ def download_grafana_metrics(cfg, metrics, main_folder_path, services):
         
         # Извлекаем параметры времени из конфигурации
         timezone = cfg['mainConfig']['timezone']        # Часовой пояс (например, Europe/Moscow)
-        from_time = to_utc_iso(cfg['mainConfig']['from'], timezone)  # Начальное время в UTC ISO
-        to_time = to_utc_iso(cfg['mainConfig']['to'], timezone)      # Конечное время в UTC ISO
+        from_time = to_utc_epoch_ms(cfg['mainConfig']['from'], timezone)  # Начальное время (epoch ms)
+        to_time = to_utc_epoch_ms(cfg['mainConfig']['to'], timezone)      # Конечное время (epoch ms)
         
         logging.info(f"⏰ Временной диапазон: {cfg['mainConfig']['from']} - {cfg['mainConfig']['to']} ({timezone})")
         logging.info(f"🔄 Конвертировано в UTC: {from_time} - {to_time}")

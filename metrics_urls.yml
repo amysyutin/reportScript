@@ -2,6 +2,15 @@
 # Каждая метрика содержит информацию о панели dashboard'а и параметрах запроса
 metrics:
   # ========== SPRING BOOT МЕТРИКИ (Application Performance) ==========
+
+  # &var-application=dh-documents-service
+  # &var-instance=$__all
+  # &var-memory_pool_heap=$__all
+  # &var-memory_pool_nonheap=$__all
+  # &var-namespace=astra-stress
+  # &var-pod=$__all
+  # &var-loglevel=$__all
+  # &viewPanel=panel-95
   
   - name: "cpu_usage"                    # Использование CPU приложением
     dashboard_uid: "spring-boot-2x"      # UID dashboard'а в Grafana
@@ -15,6 +24,9 @@ metrics:
       var-instance: "$__all"                  # Все инстансы
       var-memory_pool_heap: "$__all"          # Все heap пулы памяти
       var-memory_pool_nonheap: "$__all"       # Все non-heap пулы памяти
+      var-namespace: "astra-stress"           # Namespace в Kubernetes
+      var-pod: "$__all"                        # Все поды
+      var-loglevel: "$__all"
       timeout: 60                         # Таймаут запроса в секундах
 
   - name: "load_average"                 # Средняя нагрузка на систему
@@ -29,6 +41,9 @@ metrics:
       var-instance: "$__all"
       var-memory_pool_heap: "$__all"
       var-memory_pool_nonheap: "$__all"
+      var-namespace: "astra-stress"           # Namespace в Kubernetes
+      var-pod: "$__all"                        # Все поды
+      var-loglevel: "$__all"
       timeout: 60
 
   # ========== ПАМЯТЬ (Memory Management) ==========
@@ -45,6 +60,9 @@ metrics:
       var-instance: "$__all"
       var-memory_pool_heap: "G1 Eden Space"  # Конкретный пул памяти
       var-memory_pool_nonheap: "$__all"
+      var-namespace: "astra-stress"           # Namespace в Kubernetes
+      var-pod: "$__all"                        # Все поды
+      var-loglevel: "$__all"
       timeout: 60
 
   - name: "old_gen"                      # G1 Old Gen (heap) - область для долгоживущих объектов
@@ -59,6 +77,9 @@ metrics:
       var-instance: "$__all"
       var-memory_pool_heap: "G1 Old Gen"
       var-memory_pool_nonheap: "$__all"
+      var-namespace: "astra-stress"           # Namespace в Kubernetes
+      var-pod: "$__all"                        # Все поды
+      var-loglevel: "$__all"
       timeout: 60
 
   - name: "survivor_space"               # G1 Survivor Space (heap) - промежуточная область
@@ -73,6 +94,9 @@ metrics:
       var-instance: "$__all"
       var-memory_pool_heap: "G1 Survivor Space"
       var-memory_pool_nonheap: "$__all"
+      var-namespace: "astra-stress"           # Namespace в Kubernetes
+      var-pod: "$__all"                        # Все поды
+      var-loglevel: "$__all"
       timeout: 60
 
   - name: "metaspace"                    # Metaspace (non-heap) - метаданные классов
@@ -87,6 +111,9 @@ metrics:
       var-instance: "$__all"
       var-memory_pool_heap: "$__all"
       var-memory_pool_nonheap: "Metaspace"
+      var-namespace: "astra-stress"           # Namespace в Kubernetes
+      var-pod: "$__all"                        # Все поды
+      var-loglevel: "$__all"
       timeout: 60
 
   - name: "compressed_class_space"       # Compressed Class Space - сжатое пространство классов
@@ -101,6 +128,9 @@ metrics:
       var-instance: "$__all"
       var-memory_pool_heap: "$__all"
       var-memory_pool_nonheap: "Compressed Class Space"
+      var-namespace: "astra-stress"           # Namespace в Kubernetes
+      var-pod: "$__all"                        # Все поды
+      var-loglevel: "$__all"
       timeout: 60
 
   # ========== ПОТОКИ И КЛАССЫ (Threads & Classes) ==========
@@ -117,6 +147,9 @@ metrics:
       var-instance: "$__all"
       var-memory_pool_heap: "$__all"
       var-memory_pool_nonheap: "$__all"
+      var-namespace: "astra-stress"           # Namespace в Kubernetes
+      var-pod: "$__all"                        # Все поды
+      var-loglevel: "$__all"
       timeout: 60
 
   - name: "memory_allocate_promote"      # Выделение и продвижение памяти
@@ -131,6 +164,9 @@ metrics:
       var-instance: "$__all"
       var-memory_pool_heap: "$__all"
       var-memory_pool_nonheap: "$__all"
+      var-namespace: "astra-stress"           # Namespace в Kubernetes
+      var-pod: "$__all"                        # Все поды
+      var-loglevel: "$__all"
       timeout: 60
 
   - name: "classes_unloaded"             # Количество выгруженных классов
@@ -145,6 +181,9 @@ metrics:
       var-instance: "$__all"
       var-memory_pool_heap: "$__all"
       var-memory_pool_nonheap: "$__all"
+      var-namespace: "astra-stress"           # Namespace в Kubernetes
+      var-pod: "$__all"                        # Все поды
+      var-loglevel: "$__all"
       timeout: 60
 
   - name: "classes_loaded"               # Количество загруженных классов
@@ -159,6 +198,9 @@ metrics:
       var-instance: "$__all"
       var-memory_pool_heap: "$__all"
       var-memory_pool_nonheap: "$__all"
+      var-namespace: "astra-stress"           # Namespace в Kubernetes
+      var-pod: "$__all"                        # Все поды
+      var-loglevel: "$__all"
       timeout: 60
 
   # ========== GARBAGE COLLECTION ==========
@@ -175,6 +217,9 @@ metrics:
       var-instance: "$__all"
       var-memory_pool_heap: "$__all"
       var-memory_pool_nonheap: "$__all"
+      var-namespace: "astra-stress"           # Namespace в Kubernetes
+      var-pod: "$__all"                        # Все поды
+      var-loglevel: "$__all"
       timeout: 60
 
   - name: "gc_stop_the_world_duration"   # Длительность остановки мира при GC
@@ -189,6 +234,9 @@ metrics:
       var-instance: "$__all"
       var-memory_pool_heap: "$__all"
       var-memory_pool_nonheap: "$__all"
+      var-namespace: "astra-stress"           # Namespace в Kubernetes
+      var-pod: "$__all"                        # Все поды
+      var-loglevel: "$__all"
       timeout: 60
 
   # ========== HTTP МЕТРИКИ (HTTP Performance) ==========
@@ -205,6 +253,9 @@ metrics:
       var-instance: "$__all"
       var-memory_pool_heap: "$__all"
       var-memory_pool_nonheap: "$__all"
+      var-namespace: "astra-stress"           # Namespace в Kubernetes
+      var-pod: "$__all"                        # Все поды
+      var-loglevel: "$__all"
       timeout: 60
 
   - name: "requests_per_second"          # Количество запросов в секунду
@@ -219,6 +270,9 @@ metrics:
       var-instance: "$__all"
       var-memory_pool_heap: "$__all"
       var-memory_pool_nonheap: "$__all"
+      var-namespace: "astra-stress"           # Namespace в Kubernetes
+      var-pod: "$__all"                        # Все поды
+      var-loglevel: "$__all"
       timeout: 60
 
   - name: "requests_duration"            # Длительность обработки запросов
@@ -233,6 +287,9 @@ metrics:
       var-instance: "$__all"
       var-memory_pool_heap: "$__all"
       var-memory_pool_nonheap: "$__all"
+      var-namespace: "astra-stress"           # Namespace в Kubernetes
+      var-pod: "$__all"                        # Все поды
+      var-loglevel: "$__all"
       timeout: 60
 
   # ========== KUBERNETES МЕТРИКИ (Container Performance) ==========

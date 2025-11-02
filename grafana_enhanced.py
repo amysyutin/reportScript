@@ -1,3 +1,4 @@
+
 #!/usr/bin/env python3
 """
 Упрощённый отладочный клиент, использующий src/grafana_service.py.

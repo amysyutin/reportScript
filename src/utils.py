@@ -89,6 +89,30 @@ def to_utc_iso(dt_str, tz_str):
     utc_dt = local_dt.astimezone(pytz.UTC)
     return utc_dt.strftime("%Y-%m-%dT%H:%M:%SZ")
 
+def to_utc_epoch_ms(dt_str, tz_str):
+    """Convert a local datetime string to UTC epoch milliseconds.
+
+    Parameters
+    ----------
+    dt_str : str
+        Datetime as ``YYYY-MM-DD HH:MM:SS`` or ``YYYY-MM-DD HH:MM:SS.fff`` in the given timezone.
+    tz_str : str
+        Timezone name, e.g. ``Europe/Moscow``.
+
+    Returns
+    -------
+    int
+        Milliseconds since Unix epoch in UTC.
+    """
+    tz = pytz.timezone(tz_str)
+    try:
+        dt = datetime.strptime(dt_str, "%Y-%m-%d %H:%M:%S.%f")
+    except ValueError:
+        dt = datetime.strptime(dt_str, "%Y-%m-%d %H:%M:%S")
+    local_dt = tz.localize(dt)
+    utc_dt = local_dt.astimezone(pytz.UTC)
+    return int(utc_dt.timestamp() * 1000)
+
 def ensure_file_exists(file_path):
     """
     Проверяет существование файла.

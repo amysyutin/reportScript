@@ -1,64 +1,50 @@
 mainConfig:
-  scenario: "Upload_file3"
-  type_of_script: "Maxperf"
-  from: "2025-09-03 13:36:52.562"
-  to: "2025-09-03 15:43:05.381"
-  timezone: "${TIMEZONE}"
+  scenario: "TEST"
+  type_of_script: "scalability"
+  from: "2025-10-31 12:55:47.562"
+  to: "2025-10-31 16:58:06.381"
 
-main_folder: "${REPORTS_BASE_DIR}"
 # Конфигурация сервисов скрипта
 services:
   # Системные сервисы (НЕ сервисы приложений)
-  ssh_service: true          # Скачивание отчетов Gatling по SSH
+  ssh_service: false          # Скачивание отчетов Gatling по SSH
   grafana_service: true      # Скачивание метрик из Grafana
-  gatling_metrics_service: true   # Скачивание метрик Gatling из дашборда
+  gatling_metrics_service: false   # Скачивание метрик Gatling из дашборда
   postgresql_metrics_service: true # Скачивание метрик PostgreSQL из дашборда
   
   # Сервисы приложений (для которых будут скачиваться метрики)
   # Установите true для тех сервисов, для которых нужно скачать метрики
-  dh-registry-service: true     # Сервис регистрации
+  dh-registry-service: false     # Сервис регистрации
   dh-documents-service: true    # Сервис работы с документами
-  dh-files-service: true        # Сервис работы с файлами
+  dh-files-service: false        # Сервис работы с файлами
   dh-auth-service: false        # Сервис аутентификации (отключен)
   dh-notifications-service: false  # Сервис уведомлений (отключен)
   dh-federal-search-service: false  # Сервис федерального поиска
+  dh-objects-info-service: true
   ldm-index-content-controller-service: false
-
-ssh_config:
-  host: "${SSH_HOST}"
-  username: "${SSH_USERNAME}"
-  password: "${SSH_PASSWORD}"
-  remote_path: "${SSH_REMOTE_PATH}"
-  local_path: "${SSH_LOCAL_PATH}"
+  dh-favorite-service: false
 
 grafana:
-  local_path: "${GRAFANA_LOCAL_PATH}"
   metrics_config: "metrics_urls.yml"
-  api_key: "${GRAFANA_API_KEY}"
-  base_url: "${GRAFANA_BASE_URL}"
 
 # Конфигурация для Gatling метрик (вторая Grafana)
 gatling_grafana:
-  local_path: "${GATLING_GRAFANA_LOCAL_PATH}"
-  base_url: "${GATLING_GRAFANA_BASE_URL}"
-  api_key: "${GATLING_GRAFANA_API_KEY}"  # Отдельный токен для Gatling Grafana
   gatling_metrics_config: "gatling_metrics_urls.yml"
   
   # Gatling скрипты (включить/выключить каждый отдельно)
   gatling_scripts:
-    Get_Code_Atributes: true
-    Upload_File: true            # Скрипт загрузки файлов
-    Create_Document: true
+    Get_Code_Atributes: false
+    Upload_File: false            # Скрипт загрузки файлов
+    Create_Document: false
     Federal_Search: false      # Скрипт создания документов
     Attribute_Search_1: false   # Поиск атрибутов v1
     Attribute_Search_2: false    # Поиск атрибутов v2
     Attribute_Search_3: false
     Attribute_Search_4: false
+    Get_Documents: true
+    Get_Document: false
 
 # Конфигурация для PostgreSQL метрик (основная Grafana)
 postgresql_grafana:
-  local_path: "${POSTGRESQL_GRAFANA_LOCAL_PATH}"
-  base_url: "${POSTGRESQL_GRAFANA_BASE_URL}"  # Тот же URL что и основная Grafana
-  api_key: "${POSTGRESQL_GRAFANA_API_KEY}"  # Тот же токен что и основная Grafana
   metrics_config: "metrics_urls.yml"  # Используем общий файл метрик
 
