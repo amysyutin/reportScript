@@ -4,6 +4,7 @@ import shutil
 import logging
 import subprocess
 from pathlib import Path
+import socks 
 
 def ssh_download_last_report(cfg, main_folder_path):
     """
@@ -17,6 +18,7 @@ def ssh_download_last_report(cfg, main_folder_path):
         str: Путь к скачанному отчету или None, если возникла ошибка
     """
     ssh = None
+    proxy_sock = None
     try:
         # Создаем базовую директорию для отчетов Gatling
         local_path = os.path.join(main_folder_path, "gatling")
@@ -54,15 +56,29 @@ def ssh_download_last_report(cfg, main_folder_path):
                     except Exception:
                         pkey = None
 
+        # ========== НАСТРОЙКА ПРОКСИ ДЛЯ SSH ==========
+        proxy_cfg = cfg.get('proxy', {})
+        if proxy_cfg.get('enabled'):
+            proxy_sock = create_ssh_proxy_socket(cfg)
+        else:
+            proxy_sock = None
+            logging.info("🌐 SSH подключение без прокси (прямое)")
+        # ==============================================                        
+
+        # ========== SSH ПОДКЛЮЧЕНИЕ ==========
         ssh.connect(
             hostname=host,
             port=port,
             username=username,
             pkey=pkey,
             password=None if pkey else password,
+            sock=proxy_sock,  # Добавили параметр sock для прокси
             look_for_keys=False,
             allow_agent=False,
         )
+        # =====================================
+
+        logging.info(f"✅ SSH подключение установлено к {host}:{port}")
         
         # Получаем имя последнего отчета из файла lastRun.txt
         stdin, stdout, stderr = ssh.exec_command(f"cat {cfg['ssh_config']['remote_path']}/lastRun.txt")
@@ -97,46 +113,100 @@ def ssh_download_last_report(cfg, main_folder_path):
                 os.remove(local_report_path)
             logging.info(f"Удалена существующая директория/файл отчета: {local_report_path}")
             
-        # Формируем команду SCP для копирования всей директории
-        scp_parts = [
-            'scp',
-            '-r'
-        ]
-        # Порт
-        if port:
-            scp_parts.extend(['-P', str(port)])
-        # Ключ
-        if key_path_str:
-            scp_parts.extend(['-i', f'"{os.path.expanduser(str(key_path_str))}"'])
-
-        scp_parts.append(f'"{username}@{host}:{remote_path}"')
-        scp_parts.append(f'"{local_path}"')
-        scp_command = ' '.join(scp_parts)
-        logging.info(f"Выполняем команду: {scp_command}")
+     # ========== СКАЧИВАНИЕ ЧЕРЕЗ SFTP (вместо SCP) ==========
+        # Используем SFTP вместо SCP, так как SCP работает через subprocess
+        # и не может использовать уже установленное SSH соединение через прокси
         
-        # Выполняем команду через shell
-        result = subprocess.run(scp_command, shell=True, capture_output=True, text=True)
+        logging.info(f"📥 Начинаем скачивание через SFTP...")
+        sftp = ssh.open_sftp()
         
-        if result.returncode == 0:
-            logging.info(f"Отчет успешно скачан: {local_report_path}")
+        # Рекурсивно копируем директорию
+        def sftp_get_recursive(sftp_client, remote_dir, local_dir):
+            """Рекурсивное скачивание директории через SFTP."""
+            os.makedirs(local_dir, exist_ok=True)
             
-            # Удаляем отчет с сервера после успешного скачивания
-            stdin, stdout, stderr = ssh.exec_command(f"rm -rf {remote_path}")
-            if stderr.channel.recv_exit_status() == 0:
-                logging.info(f"Отчет удален с сервера: {remote_path}")
-            else:
-                error = stderr.read().decode()
-                logging.warning(f"Не удалось удалить отчет с сервера: {error}")
+            for item in sftp_client.listdir_attr(remote_dir):
+                remote_item_path = os.path.join(remote_dir, item.filename)
+                local_item_path = os.path.join(local_dir, item.filename)
                 
-            return local_report_path
+                if item.st_mode & 0o040000:  # Это директория
+                    sftp_get_recursive(sftp_client, remote_item_path, local_item_path)
+                else:  # Это файл
+                    logging.debug(f"  Скачиваем файл: {item.filename}")
+                    sftp_client.get(remote_item_path, local_item_path)
+                    
+        sftp_get_recursive(sftp, remote_path, local_report_path)
+        sftp.close()
+        
+        logging.info(f"✅ Отчет успешно скачан через SFTP: {local_report_path}")
+        # =========================================================
+        
+        # Удаляем отчет с сервера после успешного скачивания
+        stdin, stdout, stderr = ssh.exec_command(f"rm -rf {remote_path}")
+        if stderr.channel.recv_exit_status() == 0:
+            logging.info(f"🗑️  Отчет удален с сервера: {remote_path}")
         else:
-            logging.error(f"Ошибка при выполнении scp: {result.stderr}")
-            return None
+            error = stderr.read().decode()
+            logging.warning(f"⚠️  Не удалось удалить отчет с сервера: {error}")
+            
+        return local_report_path
             
     except Exception as e:
-        logging.error(f"Ошибка при скачивании отчета: {str(e)}")
+        logging.error(f"❌ Ошибка при скачивании отчета: {str(e)}")
         logging.error(f"Тип ошибки: {type(e).__name__}")
         return None
     finally:
         if ssh:
-            ssh.close() 
+            ssh.close()
+        if proxy_sock:
+            try:
+                proxy_sock.close()
+            except:
+                pass                        
+
+
+def create_ssh_proxy_socket(cfg) -> paramiko.ProxyCommand:
+    """
+    Создаёт ProxyCommand для SSH подключения через SOCKS5 прокси.
+    
+    Args:
+        cfg (dict): Конфигурация
+        
+    Returns:
+        paramiko.ProxyCommand или None: ProxyCommand если прокси включен, None если нет
+    """
+    proxy_cfg = cfg.get('proxy', {})
+    
+    if not proxy_cfg.get('enabled'):
+        return None
+    
+    proxy_host = proxy_cfg.get('ssh_proxy_host')
+    proxy_port = proxy_cfg.get('ssh_proxy_port', 1081)
+    
+    ssh_host = cfg['ssh_config'].get('host')
+    ssh_port = int(cfg['ssh_config'].get('port', 22) or 22)
+    
+    logging.info(f"🔒 SSH подключение через SOCKS5 прокси {proxy_host}:{proxy_port}")
+    
+    # Создаём SOCKS5 сокет через paramiko.ProxyCommand
+    # Альтернатива: использовать ProxyCommand с nc или connect-proxy
+    # Но проще и надёжнее - через sock параметр
+    
+    try:
+        import socket
+        
+        # Создаём SOCKS5 сокет
+        sock = socks.socksocket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.set_proxy(
+            proxy_type=socks.SOCKS5,
+            addr=proxy_host,
+            port=proxy_port
+        )
+        sock.connect((ssh_host, ssh_port))
+        
+        logging.info(f"✅ SOCKS5 туннель для SSH установлен")
+        return sock
+        
+    except Exception as e:
+        logging.error(f"❌ Ошибка при создании SOCKS5 туннеля для SSH: {str(e)}")
+        raise            

@@ -1,5 +1,5 @@
 mainConfig:
-  scenario: "4_getById_000"
+  scenario: "TEST_12_25"
   type_of_script: "scalability"
   from: "2025-11-14 09:07:38.562"
   to: "2025-11-14 13:08:07.381"

@@ -37,6 +37,15 @@ def build_env_defaults() -> dict:
             "timezone": os.getenv("TIMEZONE"),
         },
         "main_folder": os.getenv("REPORTS_BASE_DIR"),
+
+        "proxy": {
+            "enabled": os.getenv("PROXY_ENABLED", "false").lower() == "true",
+            "url": os.getenv("PROXY_URL"),
+            "check_timeout": int(os.getenv("PROXY_CHECK_TIMEOUT", "10")),
+            "ssh_proxy_host": os.getenv("SSH_PROXY_HOST"),
+            "ssh_proxy_port": int(os.getenv("SSH_PROXY_PORT", "1081") or 1081),
+        },
+
         "ssh_config": {
             "host": os.getenv("SSH_HOST"),
             "username": os.getenv("SSH_USERNAME"),
@@ -88,6 +97,23 @@ def _resolve_env_placeholders(obj):
 
 def validate_config(cfg: dict) -> None:
     services = cfg.get('services', {})
+
+    # ========== ВАЛИДАЦИЯ ПРОКСИ ==========
+    proxy_cfg = cfg.get('proxy', {})
+    if proxy_cfg.get('enabled'):
+        if not proxy_cfg.get('url'):
+            raise ValueError("PROXY_ENABLED=true, но PROXY_URL не задан. Укажите PROXY_URL в .env")
+        
+        # Проверяем формат URL прокси
+        proxy_url = proxy_cfg.get('url', '')
+        if not proxy_url.startswith(('socks5://', 'socks5h://', 'http://', 'https://')):
+            raise ValueError(f"Неверный формат PROXY_URL: {proxy_url}. Используйте socks5h://host:port")
+        
+        logger.info("🔒 Режим прокси ВКЛЮЧЕН")
+        logger.info(f"   Прокси URL: {proxy_url}")
+    else:
+        logger.info("🌐 Режим прокси ВЫКЛЮЧЕН (прямое подключение)")
+    # ======================================
 
     if services.get('ssh_service'):
         ssh = cfg.get('ssh_config', {})
