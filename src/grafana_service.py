@@ -131,13 +131,33 @@ def download_gatling_metrics(cfg, main_folder_path, session: Optional[requests.S
             
         logging.info("\n🚀 Начинаем скачивание Gatling метрик")
         
-        # Получаем включенные Gatling скрипты
-        gatling_scripts = cfg['gatling_grafana'].get('gatling_scripts', {})
+        # Получаем включенные Gatling скрипты (поддерживаем разные размещения в конфиге)
+        gatling_scripts = {}
+        source_hint = ""
+
+        cand = (cfg.get('gatling_grafana') or {}).get('gatling_scripts') or {}
+        if isinstance(cand, dict) and cand:
+            gatling_scripts = cand
+            source_hint = "gatling_grafana.gatling_scripts"
+        else:
+            cand = (cfg.get('services') or {}).get('gatling_scripts') or {}
+            if isinstance(cand, dict) and cand:
+                gatling_scripts = cand
+                source_hint = "services.gatling_scripts"
+            else:
+                cand = cfg.get('gatling_scripts') or {}
+                if isinstance(cand, dict) and cand:
+                    gatling_scripts = cand
+                    source_hint = "gatling_scripts"
+
         enabled_scripts = [script_name for script_name, enabled in gatling_scripts.items() if enabled]
-        
+
         if not enabled_scripts:
             logging.info("⚠️  Нет включенных Gatling скриптов для скачивания")
             return
+        else:
+            if source_hint:
+                logging.info(f"📋 Использую список Gatling-скриптов из: {source_hint}")
             
         logging.info(f"📋 Включенные Gatling скрипты: {', '.join(enabled_scripts)}")
         

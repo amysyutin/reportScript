@@ -1,16 +1,16 @@
 mainConfig:
-  scenario: "TEST"
+  scenario: "4_getById_000"
   type_of_script: "scalability"
-  from: "2025-10-31 12:55:47.562"
-  to: "2025-10-31 16:58:06.381"
+  from: "2025-11-14 09:07:38.562"
+  to: "2025-11-14 13:08:07.381"
 
 # Конфигурация сервисов скрипта
 services:
   # Системные сервисы (НЕ сервисы приложений)
-  ssh_service: false          # Скачивание отчетов Gatling по SSH
+  ssh_service: true          # Скачивание отчетов Gatling по SSH
   grafana_service: true      # Скачивание метрик из Grafana
-  gatling_metrics_service: false   # Скачивание метрик Gatling из дашборда
-  postgresql_metrics_service: true # Скачивание метрик PostgreSQL из дашборда
+  gatling_metrics_service: true   # Скачивание метрик Gatling из дашборда
+  postgresql_metrics_service: false # Скачивание метрик PostgreSQL из дашборда
   
   # Сервисы приложений (для которых будут скачиваться метрики)
   # Установите true для тех сервисов, для которых нужно скачать метрики
@@ -22,14 +22,7 @@ services:
   dh-federal-search-service: false  # Сервис федерального поиска
   dh-objects-info-service: true
   ldm-index-content-controller-service: false
-  dh-favorite-service: false
-
-grafana:
-  metrics_config: "metrics_urls.yml"
-
-# Конфигурация для Gatling метрик (вторая Grafana)
-gatling_grafana:
-  gatling_metrics_config: "gatling_metrics_urls.yml"
+  dh-favorite-service: true
   
   # Gatling скрипты (включить/выключить каждый отдельно)
   gatling_scripts:
@@ -41,10 +34,15 @@ gatling_grafana:
     Attribute_Search_2: false    # Поиск атрибутов v2
     Attribute_Search_3: false
     Attribute_Search_4: false
-    Get_Documents: true
-    Get_Document: false
+    Get_Documents: false
+    Get_Document: true
 
-# Конфигурация для PostgreSQL метрик (основная Grafana)
+grafana:
+  metrics_config: "metrics_urls.yml"
+
+# Конфигурация для Gatling метрик (вторая Grafana)
+gatling_grafana:
+  gatling_metrics_config: "gatling_metrics_urls.yml"
+
 postgresql_grafana:
   metrics_config: "metrics_urls.yml"  # Используем общий файл метрик
-

@@ -40,6 +40,7 @@ def main():
         
         # Собираем только включенные сервисы приложений (исключая системные)
         system_services = {'grafana_service', 'ssh_service', 'gatling_metrics_service', 'postgresql_metrics_service'}
+        # Учитываем только булевые флаги сервисов приложений (исключая словари вроде gatling_scripts)
         metric_services = [
             name for name, enabled in service_flags.items() 
             if enabled and name not in system_services
