@@ -3,46 +3,20 @@ import requests
 import logging
 import urllib.parse
 import urllib3
-from typing import List, Tuple, Optional, Dict
+from typing import List, Tuple, Optional
 from requests.adapters import HTTPAdapter, Retry
 from requests.exceptions import Timeout, ConnectionError, HTTPError
 from utils import to_utc_iso, to_utc_epoch_ms
 
-# ========== ИМПОРТ ПРОКСИ УТИЛИТ ==========
-from proxy_utils import validate_and_prepare_proxy
-# ==========================================
-
 # Отключаем предупреждения о небезопасном SSL
+
 from config import load_metrics_config
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 
-def create_session(
-    retries: int = 3, 
-    backoff_factor: float = 0.5,
-    proxies: Optional[Dict[str, str]] = None
-) -> requests.Session:
-    """
-    Создаёт HTTP сессию с настройками повторных попыток и прокси.
-    
-    Args:
-        retries (int): Количество повторных попыток при ошибках
-        backoff_factor (float): Множитель задержки между попытками
-        proxies (dict, optional): Словарь прокси {'http': '...', 'https': '...'}
-        
-    Returns:
-        requests.Session: Настроенная сессия
-    """
+def create_session(retries: int = 3, backoff_factor: float = 0.5) -> requests.Session:
+    """Return a requests session configured with retry logic."""
     session = requests.Session()
-
-    # ========== НАСТРОЙКА ПРОКСИ ==========
-    if proxies:
-        session.proxies.update(proxies)
-        logging.info(f"🔒 HTTP сессия настроена с прокси: {proxies.get('https', proxies.get('http'))}")
-    else:
-        logging.info("🌐 HTTP сессия без прокси (прямое подключение)")
-    # ======================================
-
     retry = Retry(
         total=retries,
         backoff_factor=backoff_factor,
@@ -188,12 +162,8 @@ def download_gatling_metrics(cfg, main_folder_path, session: Optional[requests.S
         logging.info(f"📋 Включенные Gatling скрипты: {', '.join(enabled_scripts)}")
 
 
-        # ========== СОЗДАЁМ/ПЕРЕИСПОЛЬЗУЕМ HTTP СЕССИЮ ==========
-        if session is None:
-            # Если сессия не передана, создаём новую с прокси
-            proxies = validate_and_prepare_proxy(cfg)
-            session = create_session(proxies=proxies)
-        # ========================================================
+        # Создаём/переиспользуем HTTP сессию
+        session = session or create_session()
         
         # Получаем конфигурацию для Gatling метрик
         gatling_metrics_config = load_metrics_config(cfg['gatling_grafana']['gatling_metrics_config'])
@@ -430,12 +400,8 @@ def download_postgresql_metrics(cfg, main_folder_path, session: Optional[request
                 continue
 
 
-        # ========== СОЗДАЁМ/ПЕРЕИСПОЛЬЗУЕМ HTTP СЕССИЮ ==========
-        if session is None:
-            # Если сессия не передана, создаём новую с прокси
-            proxies = validate_and_prepare_proxy(cfg)
-            session = create_session(proxies=proxies)
-        # ======================================================== 
+        # Создаём/переиспользуем HTTP сессию
+        session = session or create_session()
 
         # Статистика по PostgreSQL метрикам
         logging.info(f"\n📊 Статистика для PostgreSQL метрик:")
@@ -476,10 +442,6 @@ def download_grafana_metrics(cfg, metrics, main_folder_path, services):
         base_metrics_folder = os.path.join(main_folder_path, "metrics")
         os.makedirs(base_metrics_folder, exist_ok=True)
         logging.info(f"📁 Создана базовая папка для метрик: {base_metrics_folder}")
-
-        # ========== НАСТРОЙКА ПРОКСИ ==========
-        proxies = validate_and_prepare_proxy(cfg)
-        # ======================================
         
         # Настраиваем заголовки для аутентификации в основной Grafana
         gr_base_url = str(cfg['grafana'].get('base_url', '') or '')
@@ -504,9 +466,8 @@ def download_grafana_metrics(cfg, metrics, main_folder_path, services):
         logging.info(f"⏰ Временной диапазон: {cfg['mainConfig']['from']} - {cfg['mainConfig']['to']} ({timezone})")
         logging.info(f"🔄 Конвертировано в UTC: {from_time} - {to_time}")
 
-        # ========== СОЗДАЁМ HTTP СЕССИЮ С ПРОКСИ ==========
-        session = create_session(proxies=proxies)
-        # ==================================================
+        # Создаем HTTP сессию с настройками повторных попыток
+        session = create_session()
         
         # ========== СКАЧИВАНИЕ GATLING МЕТРИК ==========
         download_gatling_metrics(cfg, main_folder_path, session)

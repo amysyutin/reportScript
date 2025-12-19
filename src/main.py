@@ -43,7 +43,7 @@ def main():
         # Учитываем только булевые флаги сервисов приложений (исключая словари вроде gatling_scripts)
         metric_services = [
             name for name, enabled in service_flags.items() 
-            if enabled and name not in system_services
+            if enabled and name not in system_services and not isinstance(enabled, dict)
         ]
         
         logger.info(f"Включенные сервисы приложений: {metric_services}")

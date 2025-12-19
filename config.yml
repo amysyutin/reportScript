@@ -1,8 +1,8 @@
 mainConfig:
-  scenario: "TEST_12_25"
-  type_of_script: "scalability"
-  from: "2025-11-14 09:07:38.562"
-  to: "2025-11-14 13:08:07.381"
+  scenario: "getById"
+  type_of_script: "35rps"
+  from: "2025-12-09 13:03:39.562"
+  to: "2025-12-09 14:16:36.381"
 
 # Конфигурация сервисов скрипта
 services:
@@ -20,7 +20,7 @@ services:
   dh-auth-service: false        # Сервис аутентификации (отключен)
   dh-notifications-service: false  # Сервис уведомлений (отключен)
   dh-federal-search-service: false  # Сервис федерального поиска
-  dh-objects-info-service: true
+  dh-objects-info-service: false
   ldm-index-content-controller-service: false
   dh-favorite-service: true
   
